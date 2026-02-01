@@ -1,7 +1,6 @@
 .gradle
 .idea
-gradle
 .gitattributes
-gradlew*
 build/
 *.iml
+developer
