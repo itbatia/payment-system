@@ -1,3 +1,23 @@
-spring:
+info:
   application:
-    name: individuals-api
+    name: ${project.name}
+    version: ${project.version}
+    description: ${project.description}
+
+server:
+  port: 8081
+
+spring:
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: http://localhost:8080/realms/psp/protocol/openid-connect/certs
+
+application:
+  individuals-api:
+    rest:
+      connection-timeout: 5000
+    swagger:
+      local-server: http://localhost
+      dev-server: https://individuals-api.dns.by

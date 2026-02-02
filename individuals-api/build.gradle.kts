@@ -35,6 +35,8 @@ dependencies {
 
     // Spring
     implementation("org.springframework.boot:spring-boot-starter-webflux")
+    implementation("org.springframework.boot:spring-boot-starter-security")
+    implementation("org.springframework.boot:spring-boot-starter-oauth2-resource-server")
 
     // Openapi
     implementation("org.springdoc:springdoc-openapi-starter-webflux-ui:${project.property("springdocOpenapiStarterWebfluxUiVersion")}")
@@ -52,6 +54,21 @@ dependencies {
     testImplementation("org.springframework.boot:spring-boot-testcontainers")
     testImplementation("org.testcontainers:testcontainers-junit-jupiter")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////                                             Обработка ресурсов                                             //////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+tasks.register<WriteProperties>("generateApplicationProperties") {
+    destinationFile = layout.buildDirectory.file("resources/main/application.properties").get().asFile
+    property("info.application.name", project.name)
+    property("info.application.version", project.version.toString())
+    property("info.application.description", project.description ?: "")
+}
+
+tasks.named("processResources") {
+    dependsOn("generateApplicationProperties")
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

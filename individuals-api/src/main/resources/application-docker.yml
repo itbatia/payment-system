@@ -1,6 +1,13 @@
 server:
   port: 8081
 
+spring:
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: http://keycloak:8080/realms/psp/protocol/openid-connect/certs
+
 management:
   endpoints:
     web:
