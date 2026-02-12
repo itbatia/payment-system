@@ -1,7 +1,7 @@
 pluginManagement {
-    val springBootVersion: String by settings
-    val springDependencyManagementVersion: String by settings
-    val openapiGeneratorVersion: String by settings
+    val springBootVersion = providers.gradleProperty("springBootVersion").get()
+    val springDependencyManagementVersion = providers.gradleProperty("springDependencyManagementVersion").get()
+    val openapiGeneratorVersion = providers.gradleProperty("openapiGeneratorVersion").get()
 
     plugins {
         id("org.springframework.boot") version springBootVersion
