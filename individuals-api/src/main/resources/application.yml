@@ -7,6 +7,12 @@ info:
 server:
   port: 8081
 
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
+
 spring:
   security:
     oauth2:
@@ -21,3 +27,12 @@ application:
     swagger:
       local-server: http://localhost
       dev-server: https://individuals-api.dns.by
+
+#keycloak:
+#  auth-server-url: https://your-keycloak/auth
+#  realm: your-realm
+#  public:
+#    client-id: your-public-client
+#  admin:
+#    client-id: your-admin-client
+#    client-secret: your-admin-secret

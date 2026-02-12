@@ -1,53 +1,43 @@
-# STAGE 1: Сборка и подготовка слоёв
-FROM eclipse-temurin:25-jdk-alpine AS builder
+# STAGE 1: Извлечение слоёв
+FROM amazoncorretto:25 AS builder
 
-WORKDIR /app
+WORKDIR /project
 
-# Копируем Gradle Wrapper и конфигурацию
-COPY gradlew .
-COPY gradle ./gradle
-COPY individuals-api/build.gradle.kts ./individuals-api/
-COPY settings.gradle.kts .
+# Копируем готовый JAR (собранный вне Docker заранее)
+COPY individuals-api/build/libs/individuals-api.jar /project/app.jar
 
-RUN echo "=== Download Gradle dependencies (for caching) ===" && \
-    ./gradlew --no-daemon dependencies
-
-# Копируем исходный код
-COPY individuals-api ./individuals-api
-
-RUN echo "=== Build executable JAR ===" && \
-    ./gradlew --no-daemon :individuals-api:bootJar && \
-    echo "=== Extract layers from JAR ===" && \
-    java -Djarmode=tools -jar individuals-api/build/libs/individuals-api.jar extract --layers --launcher && \
+RUN echo "=== Extract layers from JAR ===" && \
+    java -Djarmode=tools -jar app.jar extract --layers --launcher && \
     echo "=== Delete executable JAR ===" && \
-    rm -f individuals-api/build/libs/individuals-api.jar
+    rm -f app.jar
 
 # STAGE 2: Финальный образ
-FROM eclipse-temurin:25-jre-alpine
+FROM amazoncorretto:25
 
-RUN echo "=== Install curl for healthcheck ===" && \
-    apk add --no-cache curl && \
+RUN echo "=== Install curl for healthcheck + other utils ===" && \
+    yum install -y --allowerasing curl shadow-utils findutils && \
+    echo "=== Clear 'yum' package manager cache to reduce image size ===" && \
+    yum clean all && \
     echo "=== Create unprivileged user ===" && \
-    addgroup -g 1001 -S pspuser && \
-    adduser -u 1001 -S pspuser -G pspuser
+    groupadd -g 1001 pspuser && \
+    useradd -u 1001 -g pspuser -m -s /bin/false pspuser
 
 WORKDIR /app
 
 # Копируем слои из builder-stage
-COPY --from=builder /app/BOOT-INF/lib ./
-COPY --from=builder /app/BOOT-INF/classpath.idx ./
-COPY --from=builder /app/org ./
+COPY --from=builder /project/app/dependencies/ ./
+COPY --from=builder /project/app/spring-boot-loader/ ./
+COPY --from=builder /project/app/snapshot-dependencies/ ./
+COPY --from=builder /project/app/application/ ./
 
 RUN echo "=== Remove unnecessary JARs ===" && \
     find BOOT-INF/lib/ -name "*-sources.jar" -delete && \
     find BOOT-INF/lib/ -name "*-javadoc.jar" -delete && \
     find BOOT-INF/lib/ -name "*-tests.jar" -delete && \
-    echo "=== Set app owner ===" && \
     chown -R pspuser:pspuser /app
 
 USER pspuser
 
 EXPOSE 8081
 
-# Run
-ENTRYPOINT ["java", "org.springframework.boot.loader.launch.JarLauncher"]
+ENTRYPOINT ["java", "-Dspring.profiles.active=docker", "org.springframework.boot.loader.launch.JarLauncher"]
