@@ -1,6 +1,6 @@
-package by.itbatia.individualsapi.config;
+package by.itbatia.psp.individualsapi.config;
 
-import static by.itbatia.individualsapi.util.ConstantUtil.COLON;
+import static by.itbatia.psp.individualsapi.util.ConstantUtil.COLON;
 
 import java.util.List;
 

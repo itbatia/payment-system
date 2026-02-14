@@ -1,4 +1,4 @@
-package by.itbatia.individualsapi.config;
+package by.itbatia.psp.individualsapi.config;
 
 import java.util.ArrayList;
 import java.util.Collection;

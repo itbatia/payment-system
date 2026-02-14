@@ -1,4 +1,4 @@
-package by.itbatia.individualsapi.rest;
+package by.itbatia.psp.individualsapi.rest;
 
 import by.itbatia.individualsapi.dto.ErrorResponse;
 import by.itbatia.individualsapi.dto.TokenResponse;
