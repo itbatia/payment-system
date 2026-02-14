@@ -1,8 +1,0 @@
-2026-02-13 23:57:19.041 [background-preinit] INFO  o.h.validator.internal.util.Version - HV000001: Hibernate Validator 8.0.3.Final
-2026-02-13 23:57:19.059 [main] INFO  b.i.psp.individualsapi.Application - Starting Application using Java 25 with PID 30876 (D:\Projects\Home\payment-system\individuals-api\build\classes\java\main started by Batsian_SV in D:\Projects\Home\payment-system)
-2026-02-13 23:57:19.060 [main] INFO  b.i.psp.individualsapi.Application - No active profile set, falling back to 1 default profile: "default"
-2026-02-13 23:57:20.041 [main] INFO  o.s.b.a.e.web.EndpointLinksResolver - Exposing 1 endpoint beneath base path '/actuator'
-2026-02-13 23:57:20.238 [main] INFO  o.s.b.w.e.netty.NettyWebServer - Netty started on port 8081 (http)
-2026-02-13 23:57:20.244 [main] INFO  b.i.psp.individualsapi.Application - Started Application in 1.487 seconds (process running for 1.791)
-2026-02-13 23:58:23.193 [SpringApplicationShutdownHook] INFO  o.s.b.w.e.netty.GracefulShutdown - Commencing graceful shutdown. Waiting for active requests to complete
-2026-02-13 23:58:23.196 [netty-shutdown] INFO  o.s.b.w.e.netty.GracefulShutdown - Graceful shutdown complete
