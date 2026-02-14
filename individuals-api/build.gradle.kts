@@ -9,7 +9,7 @@ plugins {
 //////                                            Основные метаданные                                             //////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-group = "by.itbatia"
+group = "by.itbatia.psp"
 version = "1.0.0"
 description = "Authentication orchestrator"
 
@@ -48,6 +48,9 @@ dependencies {
     // Lombok
     compileOnly("org.projectlombok:lombok:${project.property("lombokVersion")}")
     annotationProcessor("org.projectlombok:lombok:${project.property("lombokVersion")}")
+
+    // Logback
+    implementation("net.logstash.logback:logstash-logback-encoder:${project.property("logstashLogbackEncoderVersion")}")
 
     // Tests
     testImplementation("org.springframework.boot:spring-boot-starter-webflux-test")

@@ -1,4 +1,4 @@
-package by.itbatia.individualsapi.util;
+package by.itbatia.psp.individualsapi.util;
 
 import lombok.experimental.UtilityClass;
 

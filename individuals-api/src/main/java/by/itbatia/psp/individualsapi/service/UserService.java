@@ -1,4 +1,4 @@
-package by.itbatia.individualsapi.service;
+package by.itbatia.psp.individualsapi.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

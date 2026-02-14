@@ -1,4 +1,4 @@
-package by.itbatia.individualsapi.config;
+package by.itbatia.psp.individualsapi.config;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
@@ -45,6 +45,7 @@ public class WebClientConfig {
             .build();
     }
 
+    //TODO fix
 //    @Bean
 //    @Qualifier("keycloakAdminClient")
 //    public WebClient keycloakAdminWebClient(@Value("${keycloak.auth-server-url}") String authServerUrl,
