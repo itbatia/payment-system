@@ -1,14 +1,14 @@
 version: '3.8'
 services:
   keycloak:
-    image: quay.io/keycloak/keycloak:26.2
+    image: quay.io/keycloak/keycloak:26.5
     container_name: individuals-keycloak
     command: start-dev --import-realm
     ports:
       - "8080:8080"
     environment:
-      KEYCLOAK_ADMIN: admin
-      KEYCLOAK_ADMIN_PASSWORD: admin
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
       KC_DB: postgres
       KC_DB_URL: jdbc:postgresql://keycloak-postgres:5432/keycloak
       KC_DB_USERNAME: keycloak
@@ -19,7 +19,7 @@ services:
       keycloak-postgres:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      test: ["CMD-SHELL", "echo > /dev/tcp/localhost/8080"]              # Used TCP healthcheck because 'curl' not found
       interval: 10s
       timeout: 5s
       retries: 10
@@ -87,7 +87,7 @@ services:
     command: -config.file=/etc/loki/local-config.yaml
     volumes:
       - ./loki/loki-config.yaml:/etc/loki/local-config.yaml:ro
-      - loki_data:/loki
+      - loki_data:/loki                                                   # to save state between container restarts
     healthcheck:
       test: ["CMD", "wget", "--spider", "http://localhost:3100/ready"]
       interval: 10s

@@ -1,11 +1,11 @@
+server:
+  port: 8081
+
 info:
   application:
     name: ${project.name}
     version: ${project.version}
     description: ${project.description}
-
-server:
-  port: 8081
 
 springdoc:
   api-docs:
@@ -18,7 +18,14 @@ spring:
     oauth2:
       resourceserver:
         jwt:
-          jwk-set-uri: http://localhost:8080/realms/psp/protocol/openid-connect/certs
+          jwk-set-uri: http://individuals-keycloak:8080/realms/individuals/protocol/openid-connect/certs
+
+keycloak:
+  admin:
+    auth-server-url: http://individuals-keycloak:8080
+    realm: individuals
+    client-id: individuals-api
+    client-secret: ваш_секрет_из_realm-export.json
 
 application:
   individuals-api:
@@ -28,11 +35,15 @@ application:
       local-server: http://localhost
       dev-server: https://individuals-api.dns.by
 
-#keycloak:
-#  auth-server-url: https://your-keycloak/auth
-#  realm: your-realm
-#  public:
-#    client-id: your-public-client
-#  admin:
-#    client-id: your-admin-client
-#    client-secret: your-admin-secret
+management:
+  prometheus:
+    metrics:
+      export:
+        enabled: true
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    health:
+      show-details: ALWAYS

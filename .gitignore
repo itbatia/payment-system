@@ -3,4 +3,4 @@
 .gitattributes
 build/
 *.iml
-developer
+developer/developer

@@ -43,7 +43,7 @@ dependencies {
 
     // Metrics
     implementation("org.springframework.boot:spring-boot-starter-actuator")
-    runtimeOnly("io.micrometer:micrometer-registry-prometheus:${project.property("micrometerVersion")}")
+    runtimeOnly("io.micrometer:micrometer-registry-prometheus:${project.property("micrometerRegistryPrometheusVersion")}")
 
     // Lombok
     compileOnly("org.projectlombok:lombok:${project.property("lombokVersion")}")

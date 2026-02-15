@@ -2,31 +2,17 @@
 <configuration>
     <property name="LOG_LEVEL" value="${LOG_LEVEL:-INFO}"/>
     <property name="APP_NAME" value="${info.application.name:-individuals-api}"/>
-    <property name="LOG_PATTERN"
-              value="%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level ${PID:- } --- [%15.15t] %-40.40logger{39} : %m%n"/>
-
-    <!-- =========================================================================================================== -->
-    <!-- TEXT Console Appender                                                                                       -->
-    <!-- =========================================================================================================== -->
-    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
-        <encoder>
-            <pattern>${LOG_PATTERN}</pattern>
-        </encoder>
-    </appender>
-
-    <!-- =========================================================================================================== -->
-    <!-- JSON Console Appender                                                                                       -->
-    <!-- =========================================================================================================== -->
-    <appender name="JSON_CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
-        <encoder class="net.logstash.logback.encoder.LogstashEncoder">
-            <customFields>{"app":"${APP_NAME}"}</customFields>
-        </encoder>
-    </appender>
+    <property name="LOG_PATTERN" value="%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level ${PID:- } --- [%15.15t] %-40.40logger{39} : %m%n"/>
 
     <!-- ======================================== -->
     <!-- Development profiles: TEXT logs          -->
     <!-- ======================================== -->
-    <springProfile name="dev, local">
+    <springProfile name="dev or local">
+        <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+            <encoder>
+                <pattern>${LOG_PATTERN}</pattern>
+            </encoder>
+        </appender>
         <root level="${LOG_LEVEL}">
             <appender-ref ref="CONSOLE"/>
         </root>
@@ -35,19 +21,27 @@
     <!-- ======================================== -->
     <!-- Production profiles: JSON logs           -->
     <!-- ======================================== -->
-    <springProfile name="prod, docker">
+    <springProfile name="prod or docker">
+        <appender name="JSON_CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+            <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+                <customFields>{"app":"${APP_NAME}"}</customFields>
+            </encoder>
+        </appender>
         <root level="${LOG_LEVEL}">
             <appender-ref ref="JSON_CONSOLE"/>
         </root>
     </springProfile>
 
     <!-- ======================================== -->
-    <!-- Default (no profile or other): TEXT logs -->
+    <!-- Default (no active profile): TEXT logs   -->
     <!-- ======================================== -->
-    <springProfile name="!(dev or local or prod or docker)">
-        <root level="${LOG_LEVEL}">
-            <appender-ref ref="CONSOLE"/>
-        </root>
-    </springProfile>
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>${LOG_PATTERN}</pattern>
+        </encoder>
+    </appender>
+    <root level="${LOG_LEVEL}">
+        <appender-ref ref="CONSOLE"/>
+    </root>
 
 </configuration>

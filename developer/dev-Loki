@@ -1,0 +1,86 @@
+                                             ********************
+                                             *****   Loki   *****
+                                             ********************
+
+В docker-compose.yml для сервиса individuals-api добавил:
+    logging:
+      driver: loki
+      options:
+        loki-url: "http://loki:3100/loki/api/v1/push"
+        loki-external-labels: "app=individuals-api,env=docker"
+
+Как это работает:
+1. Ваше приложение пишет логи в stdout (через Logback → ConsoleAppender)
+2. Docker перехватывает эти логи
+3. Docker Logging Driver отправляет их напрямую в Loki (настройка драйвера логирования Docker, который определяет, куда отправлять логи из контейнера - 'individuals-api:logging' в docker-compose.yml)
+4. В Loki логи хранятся с метками app=individuals-api,env=docker (будут добавлены ко всем логам из этого контейнера. Формат: key1=value1,key2=value2)
+
+Теперь можно в Grafana делать запросы типа:
+- {app="individuals-api"} — все логи вашего сервиса
+- {app="individuals-api"} |= "ERROR" — ошибки в вашем сервисе
+- {env="docker-compose"} — логи только из docker-compose окружения
+
+Если версия Docker ≥ 20.10, надо установить plugin:
+docker plugin install grafana/loki-docker-driver:latest --alias loki --grant-all-permissions
+
+FILE Appender:
+
+<property name="LOG_DIR" value="${LOG_DIR:-logs}"/>
+
+<appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <file>${LOG_DIR}/${LOG_FILE_NAME}.log</file>
+    <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+        <fileNamePattern>${LOG_DIR}/${LOG_FILE_NAME}.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+        <maxFileSize>10MB</maxFileSize>
+        <maxHistory>30</maxHistory>
+        <totalSizeCap>1GB</totalSizeCap>
+    </rollingPolicy>
+    <encoder>
+        <pattern>${LOG_PATTERN}</pattern>
+    </encoder>
+</appender>
+
+    <!-- =========================================================================================================== -->
+    <!-- TEXT Console Appender                                                                                       -->
+    <!-- =========================================================================================================== -->
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>${LOG_PATTERN}</pattern>
+        </encoder>
+    </appender>
+
+    <!-- =========================================================================================================== -->
+    <!-- JSON Console Appender                                                                                       -->
+    <!-- =========================================================================================================== -->
+    <appender name="JSON_CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+            <customFields>{"app":"${APP_NAME}"}</customFields>
+        </encoder>
+    </appender>
+
+    <!-- ======================================== -->
+    <!-- Development profiles: TEXT logs          -->
+    <!-- ======================================== -->
+    <springProfile name="dev, local">
+        <root level="${LOG_LEVEL}">
+            <appender-ref ref="CONSOLE"/>
+        </root>
+    </springProfile>
+
+    <!-- ======================================== -->
+    <!-- Production profiles: JSON logs           -->
+    <!-- ======================================== -->
+    <springProfile name="prod, docker">
+        <root level="${LOG_LEVEL}">
+            <appender-ref ref="JSON_CONSOLE"/>
+        </root>
+    </springProfile>
+
+    <!-- ======================================== -->
+    <!-- Default (no profile or other): TEXT logs -->
+    <!-- ======================================== -->
+    <springProfile name="!(dev or local or prod or docker)">
+        <root level="${LOG_LEVEL}">
+            <appender-ref ref="CONSOLE"/>
+        </root>
+    </springProfile>

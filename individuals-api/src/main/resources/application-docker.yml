@@ -13,12 +13,3 @@ spring:
       resourceserver:
         jwt:
           jwk-set-uri: http://keycloak:8080/realms/psp/protocol/openid-connect/certs
-
-management:
-  endpoints:
-    web:
-      exposure:
-        include: health,info,prometheus
-  endpoint:
-    health:
-      show-details: always
