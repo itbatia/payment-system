@@ -39,32 +39,32 @@ services:
       timeout: 5s
       retries: 5
 
-  individuals-api:
-    build:
-      context: .
-      dockerfile: individuals-api/Dockerfile
-    container_name: individuals-api
-    ports:
-      - "8081:8081"
-    environment:
-      SPRING_PROFILES_ACTIVE: docker
-    logging:
-      driver: loki
-      options:
-        loki-url: "http://loki:3100/loki/api/v1/push"
-        loki-external-labels: "app=individuals-api,env=docker"
-    depends_on:
-      keycloak:
-        condition: service_healthy
-      prometheus:
-        condition: service_healthy
-      loki:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8081/actuator/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+#  individuals-api:
+#    build:
+#      context: .
+#      dockerfile: individuals-api/Dockerfile
+#    container_name: individuals-api
+#    ports:
+#      - "8081:8081"
+#    environment:
+#      SPRING_PROFILES_ACTIVE: docker
+#    logging:
+#      driver: loki
+#      options:
+#        loki-url: "http://loki:3100/loki/api/v1/push"
+#        loki-external-labels: "app=individuals-api,env=docker"
+#    depends_on:
+#      keycloak:
+#        condition: service_healthy
+#      prometheus:
+#        condition: service_healthy
+#      loki:
+#        condition: service_healthy
+#    healthcheck:
+#      test: ["CMD", "curl", "-f", "http://localhost:8081/actuator/health"]
+#      interval: 10s
+#      timeout: 5s
+#      retries: 5
 
   prometheus:
     image: prom/prometheus:latest

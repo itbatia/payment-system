@@ -7,9 +7,16 @@ springdoc:
   swagger-ui:
     enabled: true
 
+keycloak:
+  realm: individuals
+  base-url: http://keycloak:8080
+  client-id: individuals-api
+  client-secret: 9nekCm9JrhldqeBx5bw00LIzIBRYve6l  # must be hidden in production env
+  connection-timeout: 5000
+
 spring:
   security:
     oauth2:
       resourceserver:
         jwt:
-          jwk-set-uri: http://keycloak:8080/realms/psp/protocol/openid-connect/certs
+          jwk-set-uri: ${keycloak.base-url}/realms/${keycloak.realm}/protocol/openid-connect/certs

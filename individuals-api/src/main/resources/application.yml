@@ -13,24 +13,22 @@ springdoc:
   swagger-ui:
     enabled: false
 
+keycloak:
+  realm: individuals
+  base-url: http://localhost:8080
+  client-id: individuals-api
+  client-secret: 9nekCm9JrhldqeBx5bw00LIzIBRYve6l
+  connection-timeout: 5000
+
 spring:
   security:
     oauth2:
       resourceserver:
         jwt:
-          jwk-set-uri: http://individuals-keycloak:8080/realms/individuals/protocol/openid-connect/certs
-
-keycloak:
-  admin:
-    auth-server-url: http://individuals-keycloak:8080
-    realm: individuals
-    client-id: individuals-api
-    client-secret: ваш_секрет_из_realm-export.json
+          jwk-set-uri: ${keycloak.base-url}/realms/${keycloak.realm}/protocol/openid-connect/certs
 
 application:
   individuals-api:
-    rest:
-      connection-timeout: 5000
     swagger:
       local-server: http://localhost
       dev-server: https://individuals-api.dns.by

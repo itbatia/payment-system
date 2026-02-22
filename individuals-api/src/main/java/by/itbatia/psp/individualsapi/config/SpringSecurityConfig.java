@@ -5,6 +5,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
+import org.jspecify.annotations.NonNull;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.convert.converter.Converter;
@@ -34,10 +35,10 @@ public class SpringSecurityConfig {
     private static final String ENTRY_POINT = "/api/**";
     private static final String CLAIM_ROLE = "role";
     private static final String[] AUTH_WHITELIST = {
+        "/api/v1/auth/**",
         "/v3/api-docs/**",
         "/swagger-ui/**",
-        "/webjars/**",
-        "/v1/auth/**"
+        "/webjars/**"
     };
 
     @Bean
@@ -50,7 +51,7 @@ public class SpringSecurityConfig {
         return (exchange, ex) -> enrichResponseWithStatus(exchange, HttpStatus.FORBIDDEN);
     }
 
-    private Mono<Void> enrichResponseWithStatus(ServerWebExchange exchange, HttpStatus httpStatus) {
+    private Mono<@NonNull Void> enrichResponseWithStatus(ServerWebExchange exchange, HttpStatus httpStatus) {
         ServerHttpResponse response = exchange.getResponse();
         response.setStatusCode(httpStatus);
         return response.setComplete();
@@ -84,7 +85,7 @@ public class SpringSecurityConfig {
 //    }
 
     @Bean
-    public Converter<Jwt, ? extends Mono<? extends AbstractAuthenticationToken>> jwtAuthenticationConverter() {
+    public Converter<@NonNull Jwt, ? extends Mono<? extends @NonNull AbstractAuthenticationToken>> jwtAuthenticationConverter() {
         JwtAuthenticationConverter converter = new JwtAuthenticationConverter();
 
         // Извлекаем роли из Keycloak realm_access или resource_access
