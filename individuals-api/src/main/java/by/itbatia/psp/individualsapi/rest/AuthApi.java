@@ -3,6 +3,7 @@ package by.itbatia.psp.individualsapi.rest;
 import by.itbatia.individualsapi.dto.ErrorResponse;
 import by.itbatia.individualsapi.dto.TokenRefreshRequest;
 import by.itbatia.individualsapi.dto.TokenResponse;
+import by.itbatia.individualsapi.dto.UserLoginRequest;
 import by.itbatia.individualsapi.dto.UserRegistrationRequest;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -143,6 +144,97 @@ public interface AuthApi {
     Mono<@NonNull ResponseEntity<@NonNull TokenResponse>> registerUser(@RequestBody UserRegistrationRequest request);
 
     @Operation(
+        summary = "User login",
+        description = """
+            Authenticates user credentials and returns access/refresh tokens.
+            
+            **Important:**
+            - No local database lookup — credentials are validated directly against Keycloak
+            - Returns 401 if email/password combination is invalid
+            - This endpoint is public (no authentication required)
+            """,
+        tags = {"Authentication"},
+        requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
+            description = "User login credentials",
+            required = true,
+            content = @Content(
+                mediaType = MediaType.APPLICATION_JSON_VALUE,
+                schema = @Schema(implementation = UserLoginRequest.class),
+                examples = @ExampleObject(
+                    name = "Login request example",
+                    value = """
+                        {
+                          "email": "user@example.com",
+                          "password": "SecurePass123!"
+                        }
+                        """,
+                    summary = "Valid login credentials"
+                )
+            )
+        )
+    )
+    @ApiResponses( {
+        @ApiResponse(
+            responseCode = "200",
+            description = "Authentication successful. Returns access and refresh tokens.",
+            content = @Content(
+                mediaType = MediaType.APPLICATION_JSON_VALUE,
+                schema = @Schema(implementation = TokenResponse.class),
+                examples = @ExampleObject(
+                    name = "Successful login response",
+                    value = """
+                        {
+                          "access_token": "eyJhbGciOiJSUzI1NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJ...<truncated>",
+                          "refresh_token": "eyJhbGciOiJIUzUxMiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICI...<truncated>",
+                          "expires_in": 300,
+                          "token_type": "Bearer"
+                        }
+                        """,
+                    summary = "Tokens issued successfully"
+                )
+            )
+        ),
+        @ApiResponse(
+            responseCode = "400",
+            description = "Bad request: validation failed (e.g., missing fields or invalid email format)",
+            content = @Content(
+                mediaType = MediaType.APPLICATION_JSON_VALUE,
+                schema = @Schema(implementation = ErrorResponse.class),
+                examples = @ExampleObject(
+                    name = "Validation error",
+                    value = """
+                        {
+                          "error": "Email must be a valid email address",
+                          "status": 400
+                        }
+                        """,
+                    summary = "Input validation failed"
+                )
+            )
+        ),
+        @ApiResponse(
+            responseCode = "401",
+            description = "Unauthorized: invalid email or password",
+            content = @Content(
+                mediaType = MediaType.APPLICATION_JSON_VALUE,
+                schema = @Schema(implementation = ErrorResponse.class),
+                examples = @ExampleObject(
+                    name = "Invalid credentials",
+                    value = """
+                        {
+                          "error": "Invalid user credentials",
+                          "status": 401
+                        }
+                        """,
+                    summary = "Authentication failed"
+                )
+            )
+        )
+    })
+    @PostMapping("/login")
+    Mono<@NonNull ResponseEntity<@NonNull TokenResponse>> login(@RequestBody UserLoginRequest request);
+
+    @Operation(
         summary = "Refresh access token",
         description = """
             Exchanges a valid refresh token for a new access token (and optionally a new refresh token).
@@ -202,7 +294,7 @@ public interface AuthApi {
                     name = "Missing refresh token",
                     value = """
                         {
-                          "error": "Refresh token is required",
+                          "error": "RefreshToken field is required",
                           "status": 400
                         }
                         """,
