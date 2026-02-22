@@ -40,6 +40,13 @@ public class KeycloakClient {
     private final KeycloakProperties properties;
     private final KeycloakAdminTokenProvider keycloakAdminTokenProvider;
 
+    public Mono<@NonNull Void> createUser(String email, String password) {
+        KeycloakUserDto userDto = KeycloakUserDto.build(email, password);
+
+        return keycloakAdminTokenProvider.getValidAdminToken()
+            .flatMap(token -> registerUser(userDto, token));
+    }
+
     /**
      * <ul>
      *     Possible responses:
@@ -89,12 +96,5 @@ public class KeycloakClient {
             .retrieve()
             .onStatus(HttpStatusCode::isError, KeycloakUtil::handleKeycloakException)
             .bodyToMono(TokenResponse.class);
-    }
-
-    public Mono<@NonNull Void> createUser(String email, String password) {
-        KeycloakUserDto userDto = KeycloakUserDto.build(email, password);
-
-        return keycloakAdminTokenProvider.getValidAdminToken()
-            .flatMap(token -> registerUser(userDto, token));
     }
 }
