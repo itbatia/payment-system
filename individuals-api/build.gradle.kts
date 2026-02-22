@@ -60,9 +60,6 @@ dependencies {
 
     // Resolve CVE-2025-48924 in 'spring-cloud-starter-openfeign'
     implementation("org.apache.commons:commons-lang3:${project.property("commonsLang3Version")}")
-
-    // Deprecated method in sun.misc.Unsafe has been called from Webflux (affected netty-common-4.1.130.Final)
-    implementation("io.netty:netty-common:${project.property("nettyCommonVersion")}")
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
