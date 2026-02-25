@@ -2,6 +2,7 @@ package by.itbatia.psp.individualsapi.rest.impl;
 
 import by.itbatia.individualsapi.dto.TokenRefreshRequest;
 import by.itbatia.individualsapi.dto.TokenResponse;
+import by.itbatia.individualsapi.dto.UserInfoResponse;
 import by.itbatia.individualsapi.dto.UserLoginRequest;
 import by.itbatia.individualsapi.dto.UserRegistrationRequest;
 import by.itbatia.psp.individualsapi.rest.AuthApi;
@@ -12,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.NonNull;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Mono;
 
@@ -43,6 +45,13 @@ public class AuthController implements AuthApi {
     public Mono<@NonNull ResponseEntity<@NonNull TokenResponse>> refreshToken(TokenRefreshRequest request) {
         RestValidator.validate(request);
         return tokenService.refresh(request.getRefreshToken())
+            .map(ResponseEntity::ok);
+    }
+
+    @Override
+    public Mono<@NonNull ResponseEntity<@NonNull UserInfoResponse>> getCurrentUser(Jwt principal) {
+        String userId = principal.getSubject();
+        return userService.getCurrentUser(userId)
             .map(ResponseEntity::ok);
     }
 }

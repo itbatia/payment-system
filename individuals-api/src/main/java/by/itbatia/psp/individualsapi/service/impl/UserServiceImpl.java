@@ -1,6 +1,7 @@
 package by.itbatia.psp.individualsapi.service.impl;
 
 import by.itbatia.individualsapi.dto.TokenResponse;
+import by.itbatia.individualsapi.dto.UserInfoResponse;
 import by.itbatia.individualsapi.dto.UserRegistrationRequest;
 import by.itbatia.psp.individualsapi.client.KeycloakClient;
 import by.itbatia.psp.individualsapi.service.TokenService;
@@ -30,7 +31,8 @@ public class UserServiceImpl implements UserService {
             .then(tokenService.login(request.getEmail(), request.getPassword()));
     }
 
-//    public Mono<UserInfoResponse> getCurrentUser(String userId) {
-//        return keycloakClient.fetchUserInfo(userId);
-//    }
+    @Override
+    public Mono<@NonNull UserInfoResponse> getCurrentUser(String userId) {
+        return keycloakClient.fetchUserInfo(userId);
+    }
 }

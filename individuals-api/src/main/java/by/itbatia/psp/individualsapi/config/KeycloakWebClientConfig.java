@@ -31,25 +31,4 @@ public class KeycloakWebClientConfig {
             .clientConnector(new ReactorClientHttpConnector(httpClient))
             .build();
     }
-
-    //TODO fix
-//    @Bean
-//    @Qualifier("keycloakAdminClient")
-//    public WebClient keycloakAdminWebClient(@Value("${keycloak.auth-server-url}") String authServerUrl,
-//                                            @Value("${keycloak.realm}") String realm,
-//                                            @Value("${keycloak.admin.client-id}") String clientId,
-//                                            @Value("${keycloak.admin.client-secret}") String clientSecret) {
-//        // Получение токена администратора и создание WebClient
-//        // ...
-//    }
-//
-//    @Bean
-//    @Qualifier("keycloakPublicClient")
-//    public WebClient keycloakPublicWebClient(@Value("${keycloak.auth-server-url}") String authServerUrl,
-//                                             @Value("${keycloak.realm}") String realm,
-//                                             @Value("${keycloak.public.client-id}") String clientId) {
-//        return WebClient.builder()
-//            .baseUrl(authServerUrl + "/realms/" + realm + "/protocol/openid-connect/token")
-//            .build();
-//    }
 }

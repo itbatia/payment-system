@@ -1,4 +1,4 @@
-package by.itbatia.individualsapi;
+package by.itbatia.psp.individualsapi;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;

@@ -12,9 +12,4 @@ public class ApiException extends RuntimeException {
         super(errorMsg);
         this.httpStatus = httpStatus;
     }
-
-    public ApiException(HttpStatus httpStatus, String errorMsg, Throwable cause) {
-        super(errorMsg, cause);
-        this.httpStatus = httpStatus;
-    }
 }

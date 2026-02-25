@@ -1,4 +1,4 @@
-package by.itbatia.individualsapi;
+package by.itbatia.psp.individualsapi;
 
 import org.springframework.boot.test.context.TestConfiguration;
 
