@@ -16,8 +16,9 @@ import tools.jackson.databind.node.ObjectNode;
 @UtilityClass
 public class KeycloakUtil {
 
-    public static final String REGISTRATION_URI = "/admin/realms/{realm}/users";
-    public static final String RECEIVING_TOKEN_URI = "/realms/{realm}/protocol/openid-connect/token";
+    public static final String URI_TO_CREATE_USER = "/admin/realms/{realm}/users";
+    public static final String URI_TO_GET_TOKEN = "/realms/{realm}/protocol/openid-connect/token";
+    public static final String URI_TO_GET_USER = "/admin/realms/{realm}/users/{user-id}";
     public static final String GRANT_TYPE = "grant_type";
     public static final String GRANT_TYPE_PASSWORD = "password";
     public static final String GRANT_TYPE_REFRESH_TOKEN = "refresh_token";

@@ -3,6 +3,7 @@ package by.itbatia.psp.individualsapi.rest;
 import by.itbatia.individualsapi.dto.ErrorResponse;
 import by.itbatia.individualsapi.dto.TokenRefreshRequest;
 import by.itbatia.individualsapi.dto.TokenResponse;
+import by.itbatia.individualsapi.dto.UserInfoResponse;
 import by.itbatia.individualsapi.dto.UserLoginRequest;
 import by.itbatia.individualsapi.dto.UserRegistrationRequest;
 import io.swagger.v3.oas.annotations.Operation;
@@ -15,6 +16,9 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.jspecify.annotations.NonNull;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -323,4 +327,75 @@ public interface AuthApi {
     })
     @PostMapping("/refresh-token")
     Mono<@NonNull ResponseEntity<@NonNull TokenResponse>> refreshToken(@RequestBody TokenRefreshRequest request);
+
+    @Operation(
+        summary = "Get current user profile",
+        description = """
+            Retrieves detailed information about the currently authenticated user.
+            
+            **Authentication requirements:**
+            - The request must include a valid `Authorization: Bearer <access_token>` header.
+            - The access token must be issued by Keycloak for the same realm as the service.
+            - The token must be active and not expired.
+            
+            **How it works:**
+            1. The service validates the JWT access token using Spring Security and Keycloak's public keys.
+            2. It extracts the user identifier (`sub` claim) from the token.
+            3. It calls Keycloak Admin API (`GET /admin/realms/{realm}/users/{id}`) to fetch the full user profile.
+            4. It maps Keycloak's `UserRepresentation` to a simplified `UserInfoResponse` DTO.
+            
+            **Security note:**
+            This endpoint does **not** accept credentials (username/password). It only works with a valid OAuth2 access token.
+            
+            **Error scenarios:**
+            - `401 Unauthorized`: Missing, invalid, or expired token.
+            - `404 Not Found`: User exists in token but was deleted in Keycloak.
+            """,
+        tags = {"Authentication"},
+        responses = {
+            @ApiResponse(
+                responseCode = "200",
+                description = "User profile retrieved successfully",
+                content = @Content(
+                    mediaType = MediaType.APPLICATION_JSON_VALUE,
+                    schema = @Schema(implementation = UserInfoResponse.class),
+                    examples = @ExampleObject(
+                        name = "Successful response",
+                        value = """
+                            {
+                              "id": "a1b2c3d4-e5f6-7890-g1h2-i3j4k5l6m7n8",
+                              "email": "user@example.com",
+                              "created_at": "2026-02-25T17:01:53.471Z",
+                              "roles": []
+                            }
+                            """,
+                        summary = "Example of a valid user profile"
+                    )
+                )
+            ),
+            @ApiResponse(
+                responseCode = "401",
+                description = "Unauthorized: Invalid, missing, or expired access token"),
+            @ApiResponse(
+                responseCode = "404",
+                description = "Not Found: User referenced in token does not exist in Keycloak",
+                content = @Content(
+                    mediaType = MediaType.APPLICATION_JSON_VALUE,
+                    schema = @Schema(implementation = ErrorResponse.class),
+                    examples = @ExampleObject(
+                        name = "User not found",
+                        value = """
+                            {
+                              "error": "Authentication error: User not found",
+                              "status": 404
+                            }
+                            """,
+                        summary = "User was deleted after token issuance"
+                    )
+                )
+            )
+        }
+    )
+    @GetMapping("/me")
+    Mono<@NonNull ResponseEntity<@NonNull UserInfoResponse>> getCurrentUser(@AuthenticationPrincipal Jwt principal);
 }

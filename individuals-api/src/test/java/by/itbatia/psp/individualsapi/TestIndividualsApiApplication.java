@@ -1,6 +1,5 @@
-package by.itbatia.individualsapi;
+package by.itbatia.psp.individualsapi;
 
-import by.itbatia.psp.individualsapi.Application;
 import org.springframework.boot.SpringApplication;
 
 public class TestIndividualsApiApplication {
