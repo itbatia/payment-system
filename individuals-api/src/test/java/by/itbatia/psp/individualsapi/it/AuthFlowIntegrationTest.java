@@ -131,7 +131,7 @@ class AuthFlowIntegrationTest extends KeycloakTestcontainerConfig {
     }
 
     @Test
-    @DisplayName("IT: Refresh token returns new access token: /registration -> 201, refresh -> 200")
+    @DisplayName("IT: Refresh token returns new access token: /registration -> 201, /refresh-token -> 200")
     void whenRegistrationAndCorrectRefreshToken_then200() {
         // given
         String email = EmailUtil.generateUniqueEmail();
@@ -140,7 +140,7 @@ class AuthFlowIntegrationTest extends KeycloakTestcontainerConfig {
         // 1. Registration -> 201
         TokenResponse tokens = successfulRegistration(request);
 
-        // 2. Refresh -> 200
+        // 2. Refresh-token -> 200
         TokenRefreshRequest refreshReq = TokenRefreshRequestUtil.build(tokens.getRefreshToken());
 
         TokenResponse newTokens = webTestClient.post()
@@ -159,12 +159,12 @@ class AuthFlowIntegrationTest extends KeycloakTestcontainerConfig {
     }
 
     @Test
-    @DisplayName("IT: Invalid refresh token: refresh -> 400")
+    @DisplayName("IT: Invalid refresh token: /refresh-token -> 400")
     void whenInvalidRefreshToken_then400() {
         // given
         TokenRefreshRequest refreshReq = TokenRefreshRequestUtil.build();
 
-        // 1. Refresh -> 400
+        // 1. Refresh-token -> 400
         webTestClient.post()
             .uri("/api/v1/auth/refresh-token")
             .bodyValue(refreshReq)
@@ -189,7 +189,7 @@ class AuthFlowIntegrationTest extends KeycloakTestcontainerConfig {
     }
 
     @Test
-    @DisplayName("IT: Access /me with invalid JWT: 401 with JSON error")
+    @DisplayName("IT: Access /me with invalid JWT: /me -> 401")
     void whenAccessMeWithInvalidToken_then401() {
         // 1. Me -> 401
         webTestClient.get()
@@ -201,7 +201,7 @@ class AuthFlowIntegrationTest extends KeycloakTestcontainerConfig {
 
     @Test
     @DisplayName("IT: Registration with malformed email: /registration -> 400")
-    void whenRegisterWithMalformedEmail_Then400() {
+    void whenRegisterWithMalformedEmail_then400() {
         // given
         String email = "malformed.email.here";
         UserRegistrationRequest request = UserRegistrationRequestUtil.build(email, PASSWORD);
