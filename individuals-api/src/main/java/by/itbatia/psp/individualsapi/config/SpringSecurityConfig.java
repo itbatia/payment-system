@@ -22,7 +22,9 @@ import reactor.core.publisher.Mono;
 public class SpringSecurityConfig {
 
     private static final String[] AUTH_WHITELIST = {
-        "/api/v1/auth/**",
+        "/api/v1/auth/registration",
+        "/api/v1/auth/login",
+        "/api/v1/auth/refresh-token",
         "/v3/api-docs/**",
         "/swagger-ui/**",
         "/webjars/**"
