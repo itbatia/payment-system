@@ -56,7 +56,10 @@ dependencies {
     testImplementation("org.springframework.boot:spring-boot-starter-webflux-test")
     testImplementation("org.springframework.boot:spring-boot-testcontainers")
     testImplementation("org.testcontainers:testcontainers-junit-jupiter")
-    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+    testImplementation("com.github.dasniko:testcontainers-keycloak:${project.property("testcontainersKeycloakVersion")}")
+
+    testCompileOnly("org.projectlombok:lombok:${project.property("lombokVersion")}")
+    testAnnotationProcessor("org.projectlombok:lombok:${project.property("lombokVersion")}")
 
     // Resolve CVE-2025-48924 in 'spring-cloud-starter-openfeign'
     implementation("org.apache.commons:commons-lang3:${project.property("commonsLang3Version")}")

@@ -2,14 +2,11 @@ package by.itbatia.psp.individualsapi;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.context.annotation.Import;
 
-@Import(TestcontainersConfiguration.class)
 @SpringBootTest
-class IndividualsApiApplicationTests {
+class ApplicationTests {
 
     @Test
     void contextLoads() {
     }
-
 }
