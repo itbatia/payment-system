@@ -1,3 +1,6 @@
+# ==================================================================================================================== #
+# BASE config                                                                                                          #
+# ==================================================================================================================== #
 server:
   port: 8081
 
@@ -7,32 +10,32 @@ info:
     version: ${project.version}
     description: ${project.description}
 
-springdoc:
-  api-docs:
-    enabled: false
-  swagger-ui:
-    enabled: false
+# ==================================================================================================================== #
+# APPLICATION config                                                                                                   #
+# ==================================================================================================================== #
+individuals-api:
+  swagger:
+    local-server: http://localhost
+  keycloak:
+    realm: individuals
+    base-url: http://localhost:8080
+    client-id: individuals-api
+    client-secret: 9nekCm9JrhldqeBx5bw00LIzIBRYve6l
+    connection-timeout: 5000
 
-keycloak:
-  realm: individuals
-  base-url: http://localhost:8080
-  client-id: individuals-api
-  client-secret: 9nekCm9JrhldqeBx5bw00LIzIBRYve6l
-  connection-timeout: 5000
-
+# ==================================================================================================================== #
+# SPRING config                                                                                                        #
+# ==================================================================================================================== #
 spring:
   security:
     oauth2:
       resourceserver:
         jwt:
-          jwk-set-uri: ${keycloak.base-url}/realms/${keycloak.realm}/protocol/openid-connect/certs
+          jwk-set-uri: ${individuals-api.keycloak.base-url}/realms/${individuals-api.keycloak.realm}/protocol/openid-connect/certs
 
-application:
-  individuals-api:
-    swagger:
-      local-server: http://localhost
-      dev-server: https://individuals-api.dns.by
-
+# ==================================================================================================================== #
+# METRICS config                                                                                                       #
+# ==================================================================================================================== #
 management:
   prometheus:
     metrics:
@@ -41,7 +44,7 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info,prometheus
+        include: prometheus, health
   endpoint:
     health:
       show-details: ALWAYS

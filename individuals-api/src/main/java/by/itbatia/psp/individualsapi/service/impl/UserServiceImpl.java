@@ -4,8 +4,11 @@ import by.itbatia.individualsapi.dto.TokenResponse;
 import by.itbatia.individualsapi.dto.UserInfoResponse;
 import by.itbatia.individualsapi.dto.UserRegistrationRequest;
 import by.itbatia.psp.individualsapi.client.KeycloakClient;
+import by.itbatia.psp.individualsapi.enums.Meter;
+import by.itbatia.psp.individualsapi.service.MetricsService;
 import by.itbatia.psp.individualsapi.service.TokenService;
 import by.itbatia.psp.individualsapi.service.UserService;
+import io.micrometer.core.instrument.Timer;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.NonNull;
 import org.springframework.stereotype.Service;
@@ -20,6 +23,7 @@ public class UserServiceImpl implements UserService {
 
     private final TokenService tokenService;
     private final KeycloakClient keycloakClient;
+    private final MetricsService metricsService;
 
     /**
      * 1. Create a new user in Keycloak;<br>
@@ -27,8 +31,17 @@ public class UserServiceImpl implements UserService {
      */
     @Override
     public Mono<@NonNull TokenResponse> register(UserRegistrationRequest request) {
+        Timer.Sample sample = metricsService.startTimer();
         return keycloakClient.createUser(request.getEmail(), request.getPassword())
-            .then(tokenService.login(request.getEmail(), request.getPassword()));
+            .then(tokenService.login(request.getEmail(), request.getPassword()))
+            .doOnSuccess(_ -> {
+                metricsService.incrementSuccessfulRegistration();
+                metricsService.stopTimerOnSuccess(sample, Meter.KC_REGISTRATION_LATENCY);
+            })
+            .doOnError(_ -> {
+                metricsService.incrementFailedRegistration();
+                metricsService.stopTimerOnError(sample, Meter.KC_REGISTRATION_LATENCY);
+            });
     }
 
     @Override

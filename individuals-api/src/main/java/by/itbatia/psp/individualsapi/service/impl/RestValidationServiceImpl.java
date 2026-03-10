@@ -1,37 +1,58 @@
-package by.itbatia.psp.individualsapi.validator;
+package by.itbatia.psp.individualsapi.service.impl;
 
 import by.itbatia.individualsapi.dto.TokenRefreshRequest;
 import by.itbatia.individualsapi.dto.UserLoginRequest;
 import by.itbatia.individualsapi.dto.UserRegistrationRequest;
 import by.itbatia.psp.individualsapi.exception.api.BadRequestApiException;
-import lombok.experimental.UtilityClass;
+import by.itbatia.psp.individualsapi.service.MetricsService;
+import by.itbatia.psp.individualsapi.service.RestValidationService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
 
 /**
  * @author Batsian_SV
  */
-@UtilityClass
-public class RestValidator {
+@Service
+@RequiredArgsConstructor
+public class RestValidationServiceImpl implements RestValidationService {
 
     private static final String ERROR_MSG = "%s field is required";
     private static final String EMAIL_PATTERN = "^[a-zA-Z0-9_+&*-]+(?:\\.[a-zA-Z0-9_+&*-]+)*@(?:[a-zA-Z0-9-]+\\.)+[a-zA-Z]{2,7}$";
 
-    public static void validate(UserRegistrationRequest request) throws BadRequestApiException {
-        checkForNull(request);
-        checkForNull(request.getEmail(), "Email");
-        checkForNull(request.getEmail(), "Password");
-        checkForNull(request.getEmail(), "ConfirmPassword");
-        checkPasswordsMatches(request);
-        checkEmail(request.getEmail());
+    private final MetricsService metricsService;
+
+    @Override
+    public void validate(UserRegistrationRequest request) throws BadRequestApiException {
+        try {
+            checkForNull(request);
+            checkForNull(request.getEmail(), "Email");
+            checkForNull(request.getEmail(), "Password");
+            checkForNull(request.getEmail(), "ConfirmPassword");
+            checkPasswordsMatches(request);
+            checkEmail(request.getEmail());
+
+        } catch (Exception exception) {
+            metricsService.incrementFailedRegistration();
+            throw exception;
+        }
     }
 
-    public static void validate(UserLoginRequest request) throws BadRequestApiException {
-        checkForNull(request);
-        checkForNull(request.getEmail(), "Email");
-        checkForNull(request.getEmail(), "Password");
-        checkEmail(request.getEmail());
+    @Override
+    public void validate(UserLoginRequest request) throws BadRequestApiException {
+        try {
+            checkForNull(request);
+            checkForNull(request.getEmail(), "Email");
+            checkForNull(request.getEmail(), "Password");
+            checkEmail(request.getEmail());
+
+        } catch (Exception exception) {
+            metricsService.incrementFailedLogin();
+            throw exception;
+        }
     }
 
-    public static void validate(TokenRefreshRequest request) throws BadRequestApiException {
+    @Override
+    public void validate(TokenRefreshRequest request) throws BadRequestApiException {
         checkForNull(request);
         checkForNull(request.getRefreshToken(), "RefreshToken");
     }

@@ -2,7 +2,10 @@ package by.itbatia.psp.individualsapi.service.impl;
 
 import by.itbatia.individualsapi.dto.TokenResponse;
 import by.itbatia.psp.individualsapi.client.KeycloakClient;
+import by.itbatia.psp.individualsapi.enums.Meter;
+import by.itbatia.psp.individualsapi.service.MetricsService;
 import by.itbatia.psp.individualsapi.service.TokenService;
+import io.micrometer.core.instrument.Timer;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.NonNull;
 import org.springframework.stereotype.Service;
@@ -15,6 +18,7 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 public class TokenServiceImpl implements TokenService {
 
+    private final MetricsService metricsService;
     private final KeycloakClient keycloakClient;
 
     /**
@@ -23,7 +27,17 @@ public class TokenServiceImpl implements TokenService {
      */
     @Override
     public Mono<@NonNull TokenResponse> login(String username, String password) {
-        return keycloakClient.requestToken(username, password);
+        Timer.Sample sample = metricsService.startTimer();
+
+        return keycloakClient.requestToken(username, password)
+            .doOnSuccess(_ -> {
+                metricsService.incrementSuccessfulLogin();
+                metricsService.stopTimerOnSuccess(sample, Meter.KC_LOGIN_LATENCY);
+            })
+            .doOnError(_ -> {
+                metricsService.incrementFailedLogin();
+                metricsService.stopTimerOnError(sample, Meter.KC_LOGIN_LATENCY);
+            });
     }
 
     /**

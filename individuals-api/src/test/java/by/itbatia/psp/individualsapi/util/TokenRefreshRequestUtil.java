@@ -9,12 +9,12 @@ import lombok.experimental.UtilityClass;
 @UtilityClass
 public class TokenRefreshRequestUtil {
 
-    public static TokenRefreshRequest build(String refreshToken) {
-        return buildTokenRefreshRequest(refreshToken);
-    }
-
     public static TokenRefreshRequest build() {
         return buildTokenRefreshRequest("fakeRefresh");
+    }
+
+    public static TokenRefreshRequest build(String refreshToken) {
+        return buildTokenRefreshRequest(refreshToken);
     }
 
     private static TokenRefreshRequest buildTokenRefreshRequest(String refreshToken) {
