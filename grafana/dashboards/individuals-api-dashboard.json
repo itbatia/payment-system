@@ -1,0 +1,486 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": 1,
+  "links": [],
+  "liveNow": false,
+  "panels": [
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PROMETHEUS_DS"
+      },
+      "description": "",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unitScale": true
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Неудачные логины"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "red",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Неудачные регистрации"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "red",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 0
+      },
+      "id": 1,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "10.3.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PROMETHEUS_DS"
+          },
+          "disableTextWrap": false,
+          "editorMode": "code",
+          "exemplar": false,
+          "expr": "round(increase(login_total{app=\"individuals-api\", status=\"success\"}[1h]))",
+          "fullMetaSearch": false,
+          "includeNullMetadata": true,
+          "instant": false,
+          "legendFormat": "Успешные логины",
+          "range": true,
+          "refId": "A",
+          "useBackend": false
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PROMETHEUS_DS"
+          },
+          "editorMode": "code",
+          "exemplar": false,
+          "expr": "round(increase(login_total{app=\"individuals-api\", status=\"fail\"}[1h]))",
+          "format": "time_series",
+          "hide": false,
+          "instant": false,
+          "interval": "",
+          "legendFormat": "Неудачные логины",
+          "range": true,
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PROMETHEUS_DS"
+          },
+          "editorMode": "code",
+          "expr": "round(increase(registration_total{app=\"individuals-api\", status=\"success\"}[1h]))",
+          "hide": false,
+          "instant": false,
+          "legendFormat": "Успешные регистрации",
+          "range": true,
+          "refId": "C"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PROMETHEUS_DS"
+          },
+          "editorMode": "code",
+          "expr": "round(increase(registration_total{app=\"individuals-api\", status=\"fail\"}[1h]))",
+          "hide": false,
+          "instant": false,
+          "legendFormat": "Неудачные регистрации",
+          "range": true,
+          "refId": "D"
+        }
+      ],
+      "title": "Общее количество логинов и регистраций (за последний час)",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PROMETHEUS_DS"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 0
+              },
+              {
+                "color": "green",
+                "value": 90
+              }
+            ]
+          },
+          "unitScale": true
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 8
+      },
+      "id": 5,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "10.3.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PROMETHEUS_DS"
+          },
+          "editorMode": "code",
+          "exemplar": false,
+          "expr": "(\r\n  sum(increase(login_total{status=\"success\"}[1h]))\r\n  /\r\n  sum(increase(login_total[1h]))\r\n)\r\n* 100",
+          "format": "time_series",
+          "instant": false,
+          "legendFormat": "Доля успешных логинов",
+          "range": true,
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PROMETHEUS_DS"
+          },
+          "editorMode": "code",
+          "expr": "(\r\n  sum(increase(registration_total{status=\"success\"}[1h]))\r\n  /\r\n  sum(increase(registration_total[1h]))\r\n)\r\n* 100",
+          "hide": false,
+          "instant": false,
+          "legendFormat": "Доля успешных регистраций",
+          "range": true,
+          "refId": "B"
+        }
+      ],
+      "title": "Доля успешных логинов и регистраций (за последний час)",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PROMETHEUS_DS"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unitScale": true
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 16
+      },
+      "id": 3,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "table",
+          "placement": "right",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PROMETHEUS_DS"
+          },
+          "editorMode": "code",
+          "expr": "rate(kc_login_latency_seconds_sum{app=\"individuals-api\", status=\"success\"}[5m])\r\n/\r\nrate(kc_login_latency_seconds_count{app=\"individuals-api\", status=\"success\"}[5m])\r\nunless\r\nrate(kc_login_latency_seconds_count{app=\"individuals-api\", status=\"success\"}[5m]) <= 0",
+          "instant": false,
+          "legendFormat": "Среднее время логина в Keycloak",
+          "range": true,
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PROMETHEUS_DS"
+          },
+          "editorMode": "code",
+          "expr": "rate(kc_registration_latency_seconds_sum{app=\"individuals-api\", status=\"success\"}[5m])\r\n/\r\nrate(kc_registration_latency_seconds_count{app=\"individuals-api\", status=\"success\"}[5m])\r\nunless\r\nrate(kc_registration_latency_seconds_count{app=\"individuals-api\", status=\"success\"}[5m]) <= 0",
+          "hide": false,
+          "instant": false,
+          "legendFormat": "Среднее время регистрации в Keycloak",
+          "range": true,
+          "refId": "B"
+        }
+      ],
+      "title": "Средняя латентность Keycloak-вызовов",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PROMETHEUS_DS"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unitScale": true
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 24
+      },
+      "id": 4,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "table",
+          "placement": "right",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PROMETHEUS_DS"
+          },
+          "editorMode": "code",
+          "exemplar": false,
+          "expr": "rate(http_server_requests_seconds_sum{app=\"individuals-api\", uri=\"/api/v1/auth/login\", status=\"200\"}[5m])\r\n/\r\nrate(http_server_requests_seconds_count{app=\"individuals-api\", uri=\"/api/v1/auth/login\", status=\"200\"}[5m])",
+          "format": "time_series",
+          "instant": false,
+          "legendFormat": "HTTP latency (login endpoint)",
+          "range": true,
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PROMETHEUS_DS"
+          },
+          "editorMode": "code",
+          "expr": "rate(kc_login_latency_seconds_sum{app=\"individuals-api\", status=\"success\"}[5m])\r\n/\r\nrate(kc_login_latency_seconds_count{app=\"individuals-api\", status=\"success\"}[5m])",
+          "hide": false,
+          "instant": false,
+          "legendFormat": "Keycloak latency (login)",
+          "range": true,
+          "refId": "B"
+        }
+      ],
+      "title": "Сравнение: HTTP vs Keycloak latency",
+      "type": "timeseries"
+    }
+  ],
+  "refresh": "5s",
+  "schemaVersion": 39,
+  "tags": [],
+  "templating": {
+    "list": []
+  },
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "",
+  "title": "individuals-api",
+  "uid": "a5204839-dc93-4db0-aa22-43dbc74c87e1",
+  "version": 3,
+  "weekStart": ""
+}
