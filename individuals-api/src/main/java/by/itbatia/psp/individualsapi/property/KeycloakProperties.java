@@ -7,7 +7,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * @author Batsian_SV
  */
 @Data
-@ConfigurationProperties(prefix = "keycloak")
+@ConfigurationProperties(prefix = "individuals-api.keycloak")
 public class KeycloakProperties {
 
     private String realm;

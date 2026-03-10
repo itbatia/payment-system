@@ -21,13 +21,24 @@ import reactor.core.publisher.Mono;
 @EnableWebFluxSecurity
 public class SpringSecurityConfig {
 
+    private static final String[] AUTH_BLACKLIST = {
+        "/api/v1/auth/me"
+    };
+
     private static final String[] AUTH_WHITELIST = {
         "/api/v1/auth/registration",
         "/api/v1/auth/login",
-        "/api/v1/auth/refresh-token",
+        "/api/v1/auth/refresh-token"
+    };
+
+    private static final String[] SWAGGER = {
         "/v3/api-docs/**",
         "/swagger-ui/**",
         "/webjars/**"
+    };
+
+    private static final String[] PROMETHEUS = {
+        "/actuator/prometheus"
     };
 
     @Bean
@@ -35,7 +46,10 @@ public class SpringSecurityConfig {
         http
             .csrf(ServerHttpSecurity.CsrfSpec::disable)
             .authorizeExchange(exchanges -> exchanges
+                .pathMatchers(AUTH_BLACKLIST).authenticated()
                 .pathMatchers(AUTH_WHITELIST).permitAll()
+                .pathMatchers(SWAGGER).permitAll()
+                .pathMatchers(PROMETHEUS).permitAll()
                 .anyExchange().authenticated()
             )
             .oauth2ResourceServer(oauth2 -> oauth2.jwt(Customizer.withDefaults()))

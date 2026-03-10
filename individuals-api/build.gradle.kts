@@ -63,6 +63,8 @@ dependencies {
 
     // Resolve CVE-2025-48924 in 'spring-cloud-starter-openfeign'
     implementation("org.apache.commons:commons-lang3:${project.property("commonsLang3Version")}")
+    // Resolve GHSA-72hv-8253-57qq in 'springdoc-openapi-starter-webflux-ui'
+    implementation("com.fasterxml.jackson.core:jackson-core:${project.property("jacksonCoreVersion")}")
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
