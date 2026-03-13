@@ -1,0 +1,26 @@
+server:
+  http_listen_port: 9080                                                            # === Порт для внутреннего HTTP API Promtail (не обязателен, но полезен для health-check) ===
+  grpc_listen_port: 0                                                               # === gRPC отключён (не используется в данном сценарии) ===
+
+positions:
+  filename: /tmp/positions.yaml                                                     # === Файл, где Promtail хранит позицию чтения логов (чтобы не дублировать при перезапуске) ===
+
+clients:
+  - url: http://loki:3100/loki/api/v1/push                                          # === Адрес Loki, куда отправлять логи ===
+
+scrape_configs:
+  - job_name: docker                                                                # === Имя job'ы (произвольное) ===
+    docker_sd_configs:
+      - host: tcp://host.docker.internal:2375                                       # === Специальный DNS-адрес Docker Daemon ===
+        refresh_interval: 5s                                                        # === Как часто обновлять список контейнеров ===
+    relabel_configs:                                                                # === Преобразование метаданных Docker в метки Loki ===
+      - source_labels: ['__meta_docker_container_label_com_docker_compose_service'] # === ФИЛЬТРАЦИЯ: оставляем только нужные сервисы ===
+        regex: 'individuals-api'
+        action: keep
+      - source_labels: ['__meta_docker_container_name']                             # === Создаёт метку {container="individuals-api-1} для фильтрации по имени контейнера ===
+        regex: '/?(.+)'
+        target_label: 'container'
+      - source_labels: ['__meta_docker_container_label_com_docker_compose_service'] # === Создаёт метку {app="individuals-api} — основная метка для запросов в Grafana ===
+        target_label: 'app'
+      - source_labels: ['__meta_docker_container_label_com_docker_compose_project'] # === Создаёт метку {project="payment-system"} для разных проектов ===
+        target_label: 'project'

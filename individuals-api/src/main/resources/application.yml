@@ -10,6 +10,10 @@ info:
     version: ${project.version}
     description: ${project.description}
 
+logging:
+  level:
+    by.itbatia.psp.individualsapi.service.impl.TokenServiceImpl: INFO
+
 # ==================================================================================================================== #
 # APPLICATION config                                                                                                   #
 # ==================================================================================================================== #
