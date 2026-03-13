@@ -115,8 +115,108 @@ public Mono<TokenResponse> login(String username, String password) {
 
 🖼 **Примеры визуализации**
 
-| Панель №  | Скриншот                                           |
-|:---------:|:---------------------------------------------------|
-|   1 и 2   | ![](readme-sources/grafana-dashboard-screen-1.jpg) |
-|   3 и 4   | ![](readme-sources/grafana-dashboard-screen-2.jpg) |
+| Панель № |                      Скриншот                      |
+|:--------:|:--------------------------------------------------:|
+|  1 и 2   | ![](readme-sources/grafana-dashboard-screen-1.jpg) |
+|  3 и 4   | ![](readme-sources/grafana-dashboard-screen-2.jpg) |
 
+## Дашборд логов
+
+Для централизованного анализа логов в Grafana создан отдельный дашборд, который позволяет в реальном времени
+отслеживать поведение сервиса, выявлять ошибки и коррелировать их с метриками.
+
+**📊 Панель 1: Все логи сервиса**
+
+- Тип: Logs
+- Запрос: `{app="individuals-api"}`
+- Описание: Отображает все логи сервиса `individuals-api` в режиме реального времени. Полезно для общего мониторинга
+  и отладки последовательности событий (например, вызов → обработка → ответ).
+
+**📊 Панель 2: Ошибки и предупреждения**
+
+- Тип: Logs
+- Запрос: `{app="individuals-api"} |~ "(ERROR|WARN)"`
+- Описание: Фильтрует только критические и предупреждающие сообщения. Позволяет быстро находить проблемы без шума
+  от информационных логов.
+
+**📊 Панель 3: График частоты ошибок**
+
+- Тип: Time series
+- Запрос: `rate({app="individuals-api"} |= "ERROR" [5m])`
+- Описание: Показывает динамику количества ошибок во времени (ошибок в минуту). Эту панель можно использовать для
+  корреляции со всплесками в метриках (например, рост 5xx-ответов в Prometheus).
+
+Скриншот с примером:
+![](readme-sources/grafana-dashboard-screen-3.jpg)
+
+## Developers FYI
+
+📝 **Документация**:
+
+✅ [Docker driver client](https://grafana.com/docs/loki/latest/send-data/docker-driver)  
+✅ [Promtail > Справочник по конфигурации](https://grafana.com/docs/loki/latest/send-data/promtail/configuration)  
+✅ [Лог-драйвер Loki > конфигурация](https://grafana.com/docs/loki/latest/send-data/docker-driver/configuration/#configure-the-logging-driver-for-a-swarm-service-or-compose)
+
+📌 **loki docker driver**:
+
+Начиная с Docker v20.10, появилась поддержка `custom logging drivers` через plugins.  
+Если версия Docker ≥ 20.10, надо установить plugin:
+
+```terminaloutput
+docker plugin install grafana/loki-docker-driver:latest --alias loki --grant-all-permissions
+```
+
+Эта команда устанавливает Loki-драйвер как официальный плагин Docker.  
+После этого можно использовать driver: `loki`. Для этого в `docker-compose.yml` для сервиса `individuals-api`
+необходимо добавить:
+
+```yaml
+logging:
+  driver: loki                                      # указывает Docker использовать Loki-драйвер для отправки логов
+  options:
+    loki-url: "http://loki:3100/loki/api/v1/push"   # endpoint Loki API для приёма логов
+    loki-external-labels: "app=individuals-api,project=payment-system"
+    loki-batch-size: "10240"                        # 10 KB вместо 1 MB
+    loki-batch-wait: "1s"                           # Ждать максимум 1 секунду
+```
+
+⚠️ _информация о лог-драйвере Loki представлена в ознакомительных целях и актуальна только для Unix-подобных ОС._
+
+> ❗ Loki-драйвер - это альтернативный вариант использованию отдельного агента `Promtail`
+
+## Project platform
+
+💻 **Для запуска проекта не на Windows необходимо**:
+
+1) добавить том в `docker-compose.yml` -> service `promtail` (см. таблицу);
+2) изменить host в `promtail/promtail-config.yml` (см. таблицу).
+
+| Платформа                | Том в `docker-compose.yml`                  | host в `promtail-config.yml`    |
+|:-------------------------|:--------------------------------------------|:--------------------------------|
+| Linux                    | - /var/run/docker.sock:/var/run/docker.sock | unix:///var/run/docker.sock     |
+| macOS (Docker Desktop)   | - /var/run/docker.sock:/var/run/docker.sock | unix:///var/run/docker.sock     |
+| Windows (Docker Desktop) | ❌ не нужен том                              | tcp://host.docker.internal:2375 |
+
+ℹ️ Детали и описание:
+
+1. Linux:
+
+- Docker Engine работает напрямую на хосте;
+- Сокет `/var/run/docker.sock` — это Unix domain socket;
+- `Promtail` (внутри контейнера) может к нему обратиться, если смонтирован том.
+
+2. macOS (Docker Desktop):
+
+- Docker Desktop на macOS запускает виртуальную машину (VM) на базе HyperKit;
+- Но Docker Desktop проксирует Unix-сокет `/var/run/docker.sock` на хост macOS;
+- Файл `/var/run/docker.sock` существует на macOS, и он перенаправляет запросы в VM;
+- `Promtail` (внутри контейнера) может к нему обратиться, если смонтирован том.
+
+3. Windows (Docker Desktop)
+
+- Docker Desktop на Windows не предоставляет Unix-сокет `/var/run/docker.sock`.
+- Зато он предоставляет специальный DNS-адрес: `host.docker.internal`, который разрешается в IP хоста.
+
+> 💡 Убедитесь, что в Docker Desktop включены опции:  
+> Settings → General → ☑ Expose daemon on tcp://localhost:2375 without TLS  
+> Settings → General → Use the WSL 2 based engine.

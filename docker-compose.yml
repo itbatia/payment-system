@@ -48,11 +48,12 @@ services:
       - "8081:8081"
     environment:
       SPRING_PROFILES_ACTIVE: docker
-    logging:
-      driver: loki
-      options:
-        loki-url: "http://loki:3100/loki/api/v1/push"
-        loki-external-labels: "app=individuals-api,env=docker"
+      KC_REALM: individuals                               # Name of the Keycloak realm used for authentication and user management.
+      KC_BASE_URL: http://keycloak:8080                   # Base URL of the Keycloak server.
+      KC_CLIENT_ID: individuals-api                       # Client ID registered in Keycloak for this service.
+      KC_CLIENT_SECRET: 9nekCm9JrhldqeBx5bw00LIzIBRYve6l  # Secret associated with the Keycloak client. Must be hidden in production env.
+      KC_CONNECTION_TIMEOUT: 5000                         # Timeout (in millis) for HTTP connections to the Keycloak server.
+      LOG_LEVEL_TOKEN_SERVICE: DEBUG                      # DEBUG/INFO -> with/without: (log example) 'User with [username=test@mail.ru] has logged in'.
     depends_on:
       keycloak:
         condition: service_healthy
@@ -80,7 +81,7 @@ services:
       retries: 5
 
   loki:
-    image: grafana/loki:2.9.2
+    image: grafana/loki:3.5.12
     container_name: loki
     ports:
       - "3100:3100"
@@ -95,7 +96,7 @@ services:
       retries: 5
 
   grafana:
-    image: grafana/grafana:10.3.1
+    image: grafana/grafana:12.3.5
     container_name: grafana-psp
     ports:
       - "3000:3000"
@@ -115,6 +116,21 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+
+  promtail:
+    image: grafana/promtail:3.5.12
+    container_name: promtail
+    volumes:
+      - ./promtail/promtail-config.yml:/etc/promtail/config.yml
+    command: -config.file=/etc/promtail/config.yml
+    depends_on:
+      - loki
+    healthcheck:
+      test: [ "CMD", "wget", "--spider", "http://localhost:9080/metrics" ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
 
 volumes:
   loki_data:
