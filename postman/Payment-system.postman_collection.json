@@ -1,0 +1,276 @@
+{
+  "info": {
+    "_postman_id": "6f9fc8a0-3681-4fc4-8b83-dc9a81a2b9d1",
+    "name": "Payment-system",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "20623795"
+  },
+  "item": [
+    {
+      "name": "Individuals-API",
+      "item": [
+        {
+          "name": "registration",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"email\": \"test@mail.ru\",\r\n    \"password\": \"password\",\r\n    \"confirm_password\": \"password\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:8081/api/v1/auth/registration",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8081",
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "registration"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "login",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"email\": \"test@mail.ru\",\r\n    \"password\": \"password\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:8081/api/v1/auth/login",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8081",
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "login"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "refresh-token",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"refresh_token\": \"eyJhbGciOiJIUzUxMiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICIwMmIyMjUxYy02ZjIzLTQyZTAtOTE3My1hOWNhOWYwM2MwMjIifQ.eyJleHAiOjE3NzE4MTIzMDQsImlhdCI6MTc3MTc3NjMwNCwianRpIjoiYmZiOWM1YmEtOWE2ZS03MjA3LTY5ZDEtZDc5MGJlYThkNGMxIiwiaXNzIjoiaHR0cDovL2xvY2FsaG9zdDo4MDgwL3JlYWxtcy9pbmRpdmlkdWFscyIsImF1ZCI6Imh0dHA6Ly9sb2NhbGhvc3Q6ODA4MC9yZWFsbXMvaW5kaXZpZHVhbHMiLCJzdWIiOiI0MzNkZDA3My1jNjU4LTQ3MmItYjY2Ni0xOTI3MDU3YzJkNjQiLCJ0eXAiOiJSZWZyZXNoIiwiYXpwIjoiaW5kaXZpZHVhbHMtYXBpIiwic2lkIjoiYXljLS1Mb2JiVmZvdGMyUFU4S0tNb1lNIiwic2NvcGUiOiJhY3IgcHJvZmlsZSBzZXJ2aWNlX2FjY291bnQgcm9sZXMgd2ViLW9yaWdpbnMgZW1haWwgYmFzaWMifQ.DvgD0z3og4kD_eMXgZcvxxPEGckDUHofkG4fQ69LhqGbrt05cUJ3ziSHpM5z91tkz4seuDbGXxQISJoZOVS-KQ\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:8081/api/v1/auth/refresh-token",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8081",
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "refresh-token"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "get-current-user",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "eyJhbGciOiJSUzI1NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICI5VWU5eVQ4dG9xaU1YdmRfYm51aTFwSnNqaDRyM3o4aWlPTFNMaDhFZmQ4In0.eyJleHAiOjE3NzM0MzczODYsImlhdCI6MTc3MzQzNzA4NiwianRpIjoib25ydHJvOmM3YzFkMGMyLWFmNTMtZjc0YS0xMGY4LWRhOTA3M2ZmMzhhMSIsImlzcyI6Imh0dHA6Ly9rZXljbG9hazo4MDgwL3JlYWxtcy9pbmRpdmlkdWFscyIsImF1ZCI6ImFjY291bnQiLCJzdWIiOiIyNTg4YWQ0OS01MmI5LTRmMzEtYTYxNC1jYTdiNjkxNjUyZmIiLCJ0eXAiOiJCZWFyZXIiLCJhenAiOiJpbmRpdmlkdWFscy1hcGkiLCJzaWQiOiJSVHNSZDZYd3NpaVNoNlZzakxmcm4xLVAiLCJhY3IiOiIxIiwiYWxsb3dlZC1vcmlnaW5zIjpbIi8qIl0sInJlYWxtX2FjY2VzcyI6eyJyb2xlcyI6WyJvZmZsaW5lX2FjY2VzcyIsImRlZmF1bHQtcm9sZXMtaW5kaXZpZHVhbHMiLCJ1bWFfYXV0aG9yaXphdGlvbiIsInVzZXIiXX0sInJlc291cmNlX2FjY2VzcyI6eyJhY2NvdW50Ijp7InJvbGVzIjpbIm1hbmFnZS1hY2NvdW50IiwibWFuYWdlLWFjY291bnQtbGlua3MiLCJ2aWV3LXByb2ZpbGUiXX19LCJzY29wZSI6InByb2ZpbGUgZW1haWwiLCJlbWFpbF92ZXJpZmllZCI6dHJ1ZSwicHJlZmVycmVkX3VzZXJuYW1lIjoidGVzdEBtYWlsLnJ1IiwiZW1haWwiOiJ0ZXN0QG1haWwucnUifQ.OOSDTJzPWWR_nLA8kV1Fh6rswi4fP42aNw5ZaVsMsh5tyoHo3AkDrzPcnoqVnhX4Et57T4cm4wA7aogxHDknyVllaLeuM6-iV5eomfVSFl2McZ8tt6iU66_95vyrHozmI4RDqef4Wnn8DImXNOUI8dB24bZRQWBNjfrh0XmLQ3ZGoddBMsTjOULxjTERrQZ2Ydx90Mbecwysd_EebMjPduU5dc0LHdnII3JEqwYkqt25mT40Lha6rQs-3EAqkd9GZ8PXsidi8nl8rToT0n01ALWa0YAvdrCownlHufOFfiklULrRq1UbvxeRofHfcLT-NaHYXn_pjIMjt-mKTOqp0A",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8081/api/v1/auth/me",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8081",
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "me"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Metrics",
+      "item": [
+        {
+          "name": "prometheus",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "PROMETHEUS",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "P5w9432nlg7y0q3b3g3h47810fm9aa0nc32",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-User-Login",
+                "value": "Batsian_SV",
+                "type": "text"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "ru-RU",
+                "type": "text"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "en-GB",
+                "type": "text",
+                "disabled": true
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"tag_84\": \"A0000006581010\",\r\n    \"tag_50\": \"4D4952\",\r\n    \"tag_5F2D\": \"7275656E\",\r\n    \"tag_9F24\": \"4E30333830303030303030303030303030303030303030303043523930\",\r\n    \"tag_5F28\": \"0112\",\r\n    \"tag_9F42\": \"0933\",\r\n    \"tag_9F08\": \"0002\",\r\n    \"tag_DF70\": \"0101020340\",\r\n    \"tag_DF6F\": \"DF71029F02069F03069F1A025F2A029A039C019F37049F3501\",\r\n    \"tag_9F38\": \"9F1502\",\r\n    \"note\": \"test\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:8081/actuator/prometheus",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8081",
+              "path": [
+                "actuator",
+                "prometheus"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "health",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "PROMETHEUS",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "P5w9432nlg7y0q3b3g3h47810fm9aa0nc32",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-User-Login",
+                "value": "Batsian_SV",
+                "type": "text"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "ru-RU",
+                "type": "text"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "en-GB",
+                "type": "text",
+                "disabled": true
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"tag_84\": \"A0000006581010\",\r\n    \"tag_50\": \"4D4952\",\r\n    \"tag_5F2D\": \"7275656E\",\r\n    \"tag_9F24\": \"4E30333830303030303030303030303030303030303030303043523930\",\r\n    \"tag_5F28\": \"0112\",\r\n    \"tag_9F42\": \"0933\",\r\n    \"tag_9F08\": \"0002\",\r\n    \"tag_DF70\": \"0101020340\",\r\n    \"tag_DF6F\": \"DF71029F02069F03069F1A025F2A029A039C019F37049F3501\",\r\n    \"tag_9F38\": \"9F1502\",\r\n    \"note\": \"test\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:8081/actuator/health",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8081",
+              "path": [
+                "actuator",
+                "health"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

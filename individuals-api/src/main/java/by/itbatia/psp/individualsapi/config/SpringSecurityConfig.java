@@ -37,8 +37,8 @@ public class SpringSecurityConfig {
         "/webjars/**"
     };
 
-    private static final String[] PROMETHEUS = {
-        "/actuator/prometheus"
+    private static final String[] METRICS = {
+        "/actuator/**"
     };
 
     @Bean
@@ -49,7 +49,7 @@ public class SpringSecurityConfig {
                 .pathMatchers(AUTH_BLACKLIST).authenticated()
                 .pathMatchers(AUTH_WHITELIST).permitAll()
                 .pathMatchers(SWAGGER).permitAll()
-                .pathMatchers(PROMETHEUS).permitAll()
+                .pathMatchers(METRICS).permitAll()
                 .anyExchange().authenticated()
             )
             .oauth2ResourceServer(oauth2 -> oauth2.jwt(Customizer.withDefaults()))
