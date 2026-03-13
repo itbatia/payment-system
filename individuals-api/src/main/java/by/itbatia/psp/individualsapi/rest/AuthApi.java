@@ -28,7 +28,7 @@ import reactor.core.publisher.Mono;
  * @author Batsian_SV
  */
 @RequestMapping("/api/v1/auth")
-@Tag(name = "Auth", description = "API for user registration and authentication")
+@Tag(name = "Authentication", description = "API for user registration and authentication")
 public interface AuthApi {
 
     @Operation(

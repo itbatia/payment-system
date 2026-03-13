@@ -26,8 +26,8 @@ public class RestValidationServiceImpl implements RestValidationService {
         try {
             checkForNull(request);
             checkForNull(request.getEmail(), "Email");
-            checkForNull(request.getEmail(), "Password");
-            checkForNull(request.getEmail(), "ConfirmPassword");
+            checkForNull(request.getPassword(), "Password");
+            checkForNull(request.getConfirmPassword(), "ConfirmPassword");
             checkPasswordsMatches(request);
             checkEmail(request.getEmail());
 
@@ -42,7 +42,7 @@ public class RestValidationServiceImpl implements RestValidationService {
         try {
             checkForNull(request);
             checkForNull(request.getEmail(), "Email");
-            checkForNull(request.getEmail(), "Password");
+            checkForNull(request.getPassword(), "Password");
             checkEmail(request.getEmail());
 
         } catch (Exception exception) {
