@@ -11,7 +11,8 @@ clients:
 scrape_configs:
   - job_name: docker                                                                # === Имя job'ы (произвольное) ===
     docker_sd_configs:
-      - host: tcp://host.docker.internal:2375                                       # === Специальный DNS-адрес Docker Daemon ===
+      - host: tcp://host.docker.internal:2375                                       # === ← для Windows. Специальный DNS-адрес Docker Daemon ===
+#      - host: unix:///var/run/docker.sock                                          # === ← для Linux/macOS
         refresh_interval: 5s                                                        # === Как часто обновлять список контейнеров ===
     relabel_configs:                                                                # === Преобразование метаданных Docker в метки Loki ===
       - source_labels: ['__meta_docker_container_label_com_docker_compose_service'] # === ФИЛЬТРАЦИЯ: оставляем только нужные сервисы ===

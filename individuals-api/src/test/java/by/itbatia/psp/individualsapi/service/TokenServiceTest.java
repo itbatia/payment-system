@@ -1,15 +1,20 @@
 package by.itbatia.psp.individualsapi.service;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import by.itbatia.individualsapi.dto.TokenResponse;
 import by.itbatia.psp.individualsapi.client.KeycloakClient;
+import by.itbatia.psp.individualsapi.enums.Meter;
 import by.itbatia.psp.individualsapi.service.impl.TokenServiceImpl;
 import by.itbatia.psp.individualsapi.util.TokenResponseUtil;
+import io.micrometer.core.instrument.Metrics;
+import io.micrometer.core.instrument.Timer;
 import org.jspecify.annotations.NonNull;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -32,6 +37,9 @@ public class TokenServiceTest {
     @Mock
     private KeycloakClient keycloakClient;
 
+    @Mock
+    private MetricsService metricsService;
+
     @InjectMocks
     private TokenServiceImpl tokenService;
 
@@ -43,6 +51,9 @@ public class TokenServiceTest {
 
         when(keycloakClient.requestToken(anyString(), anyString()))
             .thenReturn(Mono.just(tokenResponse));
+        when(metricsService.startTimer()).thenReturn(Timer.start(Metrics.globalRegistry));
+        doNothing().when(metricsService).incrementSuccessfulLogin();
+        doNothing().when(metricsService).stopTimerOnSuccess(any(), any());
 
         // when
         Mono<@NonNull TokenResponse> result = tokenService.login(EMAIL, PASSWORD);
@@ -54,5 +65,7 @@ public class TokenServiceTest {
 
         verify(keycloakClient).requestToken(EMAIL, PASSWORD);
         verify(keycloakClient, times(1)).requestToken(eq(EMAIL), eq(PASSWORD));
+        verify(metricsService).incrementSuccessfulLogin();
+        verify(metricsService).stopTimerOnSuccess(any(), eq(Meter.KC_LOGIN_LATENCY));
     }
 }
