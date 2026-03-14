@@ -1,17 +1,17 @@
 package by.itbatia.psp.individualsapi.client;
 
-import static by.itbatia.psp.individualsapi.util.KeycloakUtil.BEARER_PREFIX;
-import static by.itbatia.psp.individualsapi.util.KeycloakUtil.CLIENT_ID;
-import static by.itbatia.psp.individualsapi.util.KeycloakUtil.CLIENT_SECRET;
-import static by.itbatia.psp.individualsapi.util.KeycloakUtil.GRANT_TYPE;
-import static by.itbatia.psp.individualsapi.util.KeycloakUtil.GRANT_TYPE_PASSWORD;
-import static by.itbatia.psp.individualsapi.util.KeycloakUtil.GRANT_TYPE_REFRESH_TOKEN;
-import static by.itbatia.psp.individualsapi.util.KeycloakUtil.PASSWORD;
-import static by.itbatia.psp.individualsapi.util.KeycloakUtil.URI_TO_GET_TOKEN;
-import static by.itbatia.psp.individualsapi.util.KeycloakUtil.REFRESH_TOKEN;
-import static by.itbatia.psp.individualsapi.util.KeycloakUtil.URI_TO_CREATE_USER;
-import static by.itbatia.psp.individualsapi.util.KeycloakUtil.URI_TO_GET_USER;
-import static by.itbatia.psp.individualsapi.util.KeycloakUtil.USERNAME;
+import static by.itbatia.psp.individualsapi.util.KeycloakConstantUtil.BEARER_PREFIX;
+import static by.itbatia.psp.individualsapi.util.KeycloakConstantUtil.CLIENT_ID;
+import static by.itbatia.psp.individualsapi.util.KeycloakConstantUtil.CLIENT_SECRET;
+import static by.itbatia.psp.individualsapi.util.KeycloakConstantUtil.GRANT_TYPE;
+import static by.itbatia.psp.individualsapi.util.KeycloakConstantUtil.GRANT_TYPE_PASSWORD;
+import static by.itbatia.psp.individualsapi.util.KeycloakConstantUtil.GRANT_TYPE_REFRESH_TOKEN;
+import static by.itbatia.psp.individualsapi.util.KeycloakConstantUtil.PASSWORD;
+import static by.itbatia.psp.individualsapi.util.KeycloakConstantUtil.URI_TO_GET_TOKEN;
+import static by.itbatia.psp.individualsapi.util.KeycloakConstantUtil.REFRESH_TOKEN;
+import static by.itbatia.psp.individualsapi.util.KeycloakConstantUtil.URI_TO_CREATE_USER;
+import static by.itbatia.psp.individualsapi.util.KeycloakConstantUtil.URI_TO_GET_USER;
+import static by.itbatia.psp.individualsapi.util.KeycloakConstantUtil.USERNAME;
 
 import by.itbatia.individualsapi.dto.TokenResponse;
 import by.itbatia.individualsapi.dto.UserInfoResponse;

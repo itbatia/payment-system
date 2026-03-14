@@ -1,7 +1,9 @@
 package by.itbatia.psp.individualsapi.service;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -9,10 +11,13 @@ import static org.mockito.Mockito.when;
 import by.itbatia.individualsapi.dto.TokenResponse;
 import by.itbatia.individualsapi.dto.UserRegistrationRequest;
 import by.itbatia.psp.individualsapi.client.KeycloakClient;
+import by.itbatia.psp.individualsapi.enums.Meter;
 import by.itbatia.psp.individualsapi.exception.api.KeycloakException;
 import by.itbatia.psp.individualsapi.service.impl.UserServiceImpl;
 import by.itbatia.psp.individualsapi.util.TokenResponseUtil;
 import by.itbatia.psp.individualsapi.util.UserRegistrationRequestUtil;
+import io.micrometer.core.instrument.Metrics;
+import io.micrometer.core.instrument.Timer;
 import org.jspecify.annotations.NonNull;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -40,6 +45,9 @@ public class UserServiceTest {
     @Mock
     private KeycloakClient keycloakClient;
 
+    @Mock
+    private MetricsService metricsService;
+
     @InjectMocks
     private UserServiceImpl userService;
 
@@ -54,6 +62,9 @@ public class UserServiceTest {
             .thenReturn(Mono.empty());
         when(tokenService.login(anyString(), anyString()))
             .thenReturn(Mono.just(tokenResponse));
+        when(metricsService.startTimer()).thenReturn(Timer.start(Metrics.globalRegistry));
+        doNothing().when(metricsService).incrementSuccessfulRegistration();
+        doNothing().when(metricsService).stopTimerOnSuccess(any(), any());
 
         // when
         Mono<@NonNull TokenResponse> result = userService.register(request);
@@ -67,6 +78,8 @@ public class UserServiceTest {
         verify(tokenService).login(EMAIL, PASSWORD);
         verify(keycloakClient, times(1)).createUser(eq(EMAIL), eq(PASSWORD));
         verify(tokenService, times(1)).login(eq(EMAIL), eq(PASSWORD));
+        verify(metricsService).incrementSuccessfulRegistration();
+        verify(metricsService).stopTimerOnSuccess(any(), eq(Meter.KC_REGISTRATION_LATENCY));
     }
 
     @Test
@@ -79,6 +92,9 @@ public class UserServiceTest {
             .thenReturn(Mono.error(new KeycloakException(HttpStatus.CONFLICT, ERROR_MSG)));
         when(tokenService.login(anyString(), anyString()))
             .thenReturn(Mono.empty());
+        when(metricsService.startTimer()).thenReturn(Timer.start(Metrics.globalRegistry));
+        doNothing().when(metricsService).incrementFailedRegistration();
+        doNothing().when(metricsService).stopTimerOnError(any(), any());
 
         // when
         Mono<@NonNull TokenResponse> result = userService.register(request);
@@ -87,5 +103,7 @@ public class UserServiceTest {
         StepVerifier.create(result.doOnNext(System.out::println))
             .expectErrorMatches(throwable -> throwable.getMessage().contains(ERROR_MSG))
             .verify();
+        verify(metricsService).incrementFailedRegistration();
+        verify(metricsService).stopTimerOnError(any(), eq(Meter.KC_REGISTRATION_LATENCY));
     }
 }

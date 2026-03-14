@@ -1,10 +1,10 @@
 package by.itbatia.psp.individualsapi.client;
 
-import static by.itbatia.psp.individualsapi.util.KeycloakUtil.CLIENT_ID;
-import static by.itbatia.psp.individualsapi.util.KeycloakUtil.CLIENT_SECRET;
-import static by.itbatia.psp.individualsapi.util.KeycloakUtil.GRANT_TYPE;
-import static by.itbatia.psp.individualsapi.util.KeycloakUtil.GRANT_TYPE_CLIENT_CREDENTIALS;
-import static by.itbatia.psp.individualsapi.util.KeycloakUtil.URI_TO_GET_TOKEN;
+import static by.itbatia.psp.individualsapi.util.KeycloakConstantUtil.CLIENT_ID;
+import static by.itbatia.psp.individualsapi.util.KeycloakConstantUtil.CLIENT_SECRET;
+import static by.itbatia.psp.individualsapi.util.KeycloakConstantUtil.GRANT_TYPE;
+import static by.itbatia.psp.individualsapi.util.KeycloakConstantUtil.GRANT_TYPE_CLIENT_CREDENTIALS;
+import static by.itbatia.psp.individualsapi.util.KeycloakConstantUtil.URI_TO_GET_TOKEN;
 
 import by.itbatia.psp.individualsapi.dto.KeycloakTokenResponse;
 import by.itbatia.psp.individualsapi.property.KeycloakProperties;

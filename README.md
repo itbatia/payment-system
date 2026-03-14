@@ -4,35 +4,159 @@
 
 - `individuals-api` — оркестратор аутентификации
 
-### Сборка
+## ▶️ Запуск
 
-`./gradlew clean :individuals-api:bootJar`
+1. **Клонируйте репозиторий**
 
-### Запуск
+```
+https://github.com/itbatia/payment-system
+```
 
-`docker-compose up -d`
+2. **Соберите сервис**
 
-### Gradle commands
+```
+./gradlew clean :individuals-api:build
+```
 
-✅ Удалить папки `build/` во всех модулях:  
-`./gradlew clean`
+3. **Запустите всё окружение**
 
-✅ Собрать JAR для указанного модуля (individuals-api):  
-`/gradlew :individuals-api:bootJar`
+⚠️ _Важно! Предварительно изучите раздел про_ [_кроссплатформенность_](#Кроссплатформенность)
 
-✅ Полная пересборка модуля (очистка + сборка):  
-`./gradlew clean :individuals-api:bootJar`
+```
+docker-compose up -d
+```
 
-✅ Пересобрать Java-код на основе OpenAPI-спецификации (блок openApiGenerate):  
-`./gradlew clean :individuals-api:openApiGenerate`
+Система поднимет следующие компоненты:
+
+- `individuals-api` — Spring Boot сервис
+- `keycloak` — сервер аутентификации с предзагруженной конфигурацией (realm-config.json)
+- `postgres` — база данных для Keycloak
+- `prometheus` — сбор метрик
+- `loki` + `promtail` — сбор и агрегация логов
+- `grafana` — визуализация метрик и логов
+
+Задействованные порты:
+
+- `8081` — individuals-api
+- `8080` — keycloak
+- `5433` — postgres
+- `9090` — prometheus
+- `3100` — loki
+- `3000` — grafana
+
+> 💡 _освободите их перед запуском при необходимости_
+
+4. **Проверьте статус контейнеров**
+
+```
+docker-compose ps
+```
+
+_Все сервисы должны быть в состоянии Up.  
+Первый запуск может занять несколько минут (скачать images, инициализация Keycloak и импорт realm и т.д.)_
+
+🌐 **Доступные эндпоинты**
+
+| Компонент  | URL                                         | Описание                         |
+|:-----------|:--------------------------------------------|:---------------------------------|
+| Swagger UI | http://localhost:8081/swagger-ui/index.html | Интерактивная документация API   |
+| Grafana    | http://localhost:3000                       | Логин: `admin` / Пароль: `admin` |
+| Keycloak   | http://localhost:8080                       | Логин: `admin` / Пароль: `admin` |
+
+## 🧪 Тестирование
+
+**Postman коллекция**
+
+Для быстрой демонстрации работы API используйте Postman-коллекцию:
+
+📁 `postman/Payment-system.postman_collection.json`  
+📁 `postman/README.md`
+
+> Импортируйте её в Postman → запускайте REST-запросы.  
+> Сценарии для тестирования описаны в README.md.
+
+**Автоматические тесты**
+
+Проект включает:
+
+- Юнит-тесты (через `JUnit 5` + `Mockito`)
+- Интеграционные тесты (через `Testcontainers` + `KeycloakContainer`)
+
+Запустить все тесты:
+
+```
+./gradlew test
+```
+## 💻Кроссплатформенность
+
+Проект корректно работает на Linux, macOS и Windows (Docker Desktop). Однако способ сбора логов отличается.  
+Конфигурация Promtail по платформе:
+
+| Платформа                | Том в `docker-compose.yml`                  | host в `promtail-config.yml`    |
+|:-------------------------|:--------------------------------------------|:--------------------------------|
+| Linux                    | - /var/run/docker.sock:/var/run/docker.sock | unix:///var/run/docker.sock     |
+| macOS (Docker Desktop)   | - /var/run/docker.sock:/var/run/docker.sock | unix:///var/run/docker.sock     |
+| Windows (Docker Desktop) | ❌ не нужен том                              | tcp://host.docker.internal:2375 |
+
+> ⚠️ Сейчас конфигурация `Promtail` адаптирована под Windows. Для запуска проекта на Linux или macOS:
+> 1) добавить том в `docker-compose.yml` -> service `promtail`;
+> 2) изменить host в `promtail/promtail-config.yml`.
+
+ℹ️ Детали и описание:
+
+1. Linux:
+
+- Docker Engine работает напрямую на хосте;
+- Сокет `/var/run/docker.sock` — это Unix domain socket;
+- `Promtail` (внутри контейнера) может к нему обратиться, если смонтирован том.
+
+2. macOS (Docker Desktop):
+
+- Docker Desktop на macOS запускает виртуальную машину (VM) на базе HyperKit;
+- Но Docker Desktop проксирует Unix-сокет `/var/run/docker.sock` на хост macOS;
+- Файл `/var/run/docker.sock` существует на macOS, и он перенаправляет запросы в VM;
+- `Promtail` (внутри контейнера) может к нему обратиться, если смонтирован том.
+
+3. Windows (Docker Desktop)
+
+- Docker Desktop на Windows не предоставляет Unix-сокет `/var/run/docker.sock`.
+- Зато он предоставляет специальный DNS-адрес: `host.docker.internal`, который разрешается в IP хоста.
+
+> 💡 Убедитесь, что в Docker Desktop включены опции:  
+> Settings → General → ☑ Expose daemon on tcp://localhost:2375 without TLS  
+> Settings → General → Use the WSL 2 based engine.
+
+## 📂 Структура проекта
+
+```
+/payment-system  
+├── grafana/                # Provisioning дашбордов и источников
+├── individuals-api/        # Исходный код сервиса
+│   ├── openapi/            # OpenAPI спецификация (YAML)
+│   ├── resources/          # Импортируемый realm-config.json для Keycloak
+│   ├── src/main/java/      # Код контроллеров, сервисов, DTO
+│   └── Dockerfile          # Инструкции для сборки Docker-образа
+├── loki/                   # Конфигурация Loki
+├── postman/                # Postman-коллекция для демо
+├── prometheus/             # Конфигурация Prometheus
+├── promtail/               # Конфигурация Promtail
+├── readme-sources/         # Статические ресурсы для README.md
+├── docker-compose.yml      # Основной compose-файл
+└── README.md               # Этот файл
+```
 
 # Individuals-API
+
+Микросервис, отвечающий за оркестрацию процессов аутентификации пользователей в системе.  
+
+<img src="https://img.shields.io/badge/JDK_Version-v25.х-orange">
 
 ## Swagger
 
 📚 **Документация API**
 
 Проект сопровождается полной спецификацией OpenAPI 3.0, которая:
+
 - Описывает все эндпоинты, методы, параметры и тела запросов/ответов
 - Включает примеры успешных и ошибочных сценариев
 - Автоматически генерирует интерактивную документацию через Swagger UI
@@ -40,6 +164,7 @@
 **Как посмотреть документацию**
 
 Откройте в браузере на запущенном приложении
+
 - Swagger UI: http://localhost:8081/swagger-ui/index.html
 - OpenAPI JSON: http://localhost:8081/v3/api-docs
 
@@ -174,6 +299,8 @@ public Mono<TokenResponse> login(String username, String password) {
 ✅ [Promtail > Справочник по конфигурации](https://grafana.com/docs/loki/latest/send-data/promtail/configuration)  
 ✅ [Лог-драйвер Loki > конфигурация](https://grafana.com/docs/loki/latest/send-data/docker-driver/configuration/#configure-the-logging-driver-for-a-swarm-service-or-compose)
 
+> 💡 use VPN to access.
+
 📌 **loki docker driver**:
 
 Начиная с Docker v20.10, появилась поддержка `custom logging drivers` через plugins.  
@@ -201,39 +328,19 @@ logging:
 
 > ❗ Loki-драйвер - это альтернативный вариант использованию отдельного агента `Promtail`
 
-## Project platform
+🔧 **Gradle commands**
 
-💻 **Для запуска проекта не на Windows необходимо**:
+✅ Удалить папки `build/` во всех модулях:  
+`./gradlew clean`
 
-1) добавить том в `docker-compose.yml` -> service `promtail` (см. таблицу);
-2) изменить host в `promtail/promtail-config.yml` (см. таблицу).
+✅ Полный цикл сборки (компилляция, тесты, сборка jar/sourcesJar):  
+`./gradlew :individuals-api:build`
 
-| Платформа                | Том в `docker-compose.yml`                  | host в `promtail-config.yml`    |
-|:-------------------------|:--------------------------------------------|:--------------------------------|
-| Linux                    | - /var/run/docker.sock:/var/run/docker.sock | unix:///var/run/docker.sock     |
-| macOS (Docker Desktop)   | - /var/run/docker.sock:/var/run/docker.sock | unix:///var/run/docker.sock     |
-| Windows (Docker Desktop) | ❌ не нужен том                              | tcp://host.docker.internal:2375 |
+✅ Собрать (без тестов) JAR для указанного модуля (individuals-api):  
+`/gradlew :individuals-api:bootJar`
 
-ℹ️ Детали и описание:
+✅ Полная пересборка модуля (очистка + сборка):  
+`./gradlew clean :individuals-api:bootJar`
 
-1. Linux:
-
-- Docker Engine работает напрямую на хосте;
-- Сокет `/var/run/docker.sock` — это Unix domain socket;
-- `Promtail` (внутри контейнера) может к нему обратиться, если смонтирован том.
-
-2. macOS (Docker Desktop):
-
-- Docker Desktop на macOS запускает виртуальную машину (VM) на базе HyperKit;
-- Но Docker Desktop проксирует Unix-сокет `/var/run/docker.sock` на хост macOS;
-- Файл `/var/run/docker.sock` существует на macOS, и он перенаправляет запросы в VM;
-- `Promtail` (внутри контейнера) может к нему обратиться, если смонтирован том.
-
-3. Windows (Docker Desktop)
-
-- Docker Desktop на Windows не предоставляет Unix-сокет `/var/run/docker.sock`.
-- Зато он предоставляет специальный DNS-адрес: `host.docker.internal`, который разрешается в IP хоста.
-
-> 💡 Убедитесь, что в Docker Desktop включены опции:  
-> Settings → General → ☑ Expose daemon on tcp://localhost:2375 without TLS  
-> Settings → General → Use the WSL 2 based engine.
+✅ Пересобрать Java-код на основе OpenAPI-спецификации (блок openApiGenerate):  
+`./gradlew clean :individuals-api:openApiGenerate`
