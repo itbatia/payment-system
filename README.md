@@ -87,6 +87,7 @@ _Все сервисы должны быть в состоянии Up.
 ```
 ./gradlew test
 ```
+
 ## 💻Кроссплатформенность
 
 Проект корректно работает на Linux, macOS и Windows (Docker Desktop). Однако способ сбора логов отличается.  
@@ -148,6 +149,7 @@ _Все сервисы должны быть в состоянии Up.
 # Individuals-API
 
 Микросервис, отвечающий за оркестрацию процессов аутентификации пользователей в системе.  
+Построен на современном реактивном веб-фреймворке `Spring WebFlux`.
 
 <img src="https://img.shields.io/badge/JDK_Version-v25.х-orange">
 
@@ -344,3 +346,14 @@ logging:
 
 ✅ Пересобрать Java-код на основе OpenAPI-спецификации (блок openApiGenerate):  
 `./gradlew clean :individuals-api:openApiGenerate`
+
+🔧 **Docker commands**
+
+✅ Запустить все сервисы проекта в фоновом режиме:  
+`docker-compose up -d`
+
+✅ Остановить и удалить контейнеры и сети:  
+`docker-compose down`
+
+✅ Посмотреть список и текущее состояние (статус) контейнеров:  
+`docker-compose ps`

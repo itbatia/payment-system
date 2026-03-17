@@ -9,10 +9,12 @@ import by.itbatia.psp.individualsapi.rest.AuthApi;
 import by.itbatia.psp.individualsapi.service.RestValidationService;
 import by.itbatia.psp.individualsapi.service.TokenService;
 import by.itbatia.psp.individualsapi.service.UserService;
+import by.itbatia.psp.individualsapi.util.RestUtil;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.NonNull;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Mono;
@@ -50,9 +52,11 @@ public class AuthController implements AuthApi {
     }
 
     @Override
+    @PreAuthorize("hasRole('USER')")
     public Mono<@NonNull ResponseEntity<@NonNull UserInfoResponse>> getCurrentUser(Jwt principal) {
         String userId = principal.getSubject();
         return userService.getCurrentUser(userId)
+            .doOnNext(userInfoResponse ->  RestUtil.enrichWithRoles(userInfoResponse, principal))
             .map(ResponseEntity::ok);
     }
 }

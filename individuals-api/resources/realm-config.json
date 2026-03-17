@@ -65,16 +65,8 @@
         "composite": true,
         "composites": {
           "realm": [
-            "offline_access",
-            "uma_authorization",
             "user"
-          ],
-          "client": {
-            "account": [
-              "manage-account",
-              "view-profile"
-            ]
-          }
+          ]
         },
         "clientRole": false,
         "containerId": "c76dc453-bd4b-47f0-a2e8-f93871219544",
@@ -192,20 +184,20 @@
                 "view-authorization",
                 "manage-events",
                 "manage-clients",
-                "view-realm",
                 "query-clients",
+                "view-realm",
                 "manage-authorization",
                 "view-clients",
                 "query-users",
                 "impersonation",
-                "view-identity-providers",
                 "manage-identity-providers",
+                "view-identity-providers",
                 "query-realms",
                 "create-client",
                 "view-users",
-                "view-events",
                 "manage-realm",
                 "manage-users",
+                "view-events",
                 "query-groups"
               ]
             }
@@ -798,19 +790,19 @@
         }
       ],
       "defaultClientScopes": [
-        "service_account",
-        "web-origins",
-        "acr",
         "profile",
         "roles",
         "basic",
         "email"
       ],
       "optionalClientScopes": [
+        "web-origins",
+        "service_account",
+        "acr",
         "address",
         "phone",
-        "organization",
         "offline_access",
+        "organization",
         "microprofile-jwt"
       ]
     },
@@ -1007,13 +999,13 @@
           "protocolMapper": "oidc-organization-membership-mapper",
           "consentRequired": false,
           "config": {
-            "id.token.claim": "true",
             "introspection.token.claim": "true",
             "userinfo.token.claim": "true",
+            "multivalued": "true",
+            "id.token.claim": "true",
             "access.token.claim": "true",
             "claim.name": "organization",
-            "jsonType.label": "String",
-            "multivalued": "true"
+            "jsonType.label": "String"
           }
         }
       ]
@@ -1105,9 +1097,9 @@
           "consentRequired": false,
           "config": {
             "user.session.note": "client_id",
-            "id.token.claim": "true",
             "introspection.token.claim": "true",
             "userinfo.token.claim": "true",
+            "id.token.claim": "true",
             "access.token.claim": "true",
             "claim.name": "client_id",
             "jsonType.label": "String"
@@ -1121,9 +1113,9 @@
           "consentRequired": false,
           "config": {
             "user.session.note": "clientHost",
-            "id.token.claim": "true",
             "introspection.token.claim": "true",
             "userinfo.token.claim": "true",
+            "id.token.claim": "true",
             "access.token.claim": "true",
             "claim.name": "clientHost",
             "jsonType.label": "String"
@@ -1137,9 +1129,9 @@
           "consentRequired": false,
           "config": {
             "user.session.note": "clientAddress",
+            "introspection.token.claim": "true",
             "userinfo.token.claim": "true",
             "id.token.claim": "true",
-            "introspection.token.claim": "true",
             "access.token.claim": "true",
             "claim.name": "clientAddress",
             "jsonType.label": "String"
@@ -1210,9 +1202,9 @@
           "consentRequired": false,
           "config": {
             "user.session.note": "AUTH_TIME",
-            "id.token.claim": "true",
             "introspection.token.claim": "true",
             "userinfo.token.claim": "true",
+            "id.token.claim": "true",
             "access.token.claim": "true",
             "claim.name": "auth_time",
             "jsonType.label": "long"
@@ -1699,14 +1691,14 @@
         "subComponents": {},
         "config": {
           "allowed-protocol-mapper-types": [
-            "oidc-address-mapper",
-            "saml-role-list-mapper",
             "saml-user-property-mapper",
-            "oidc-usermodel-attribute-mapper",
-            "oidc-usermodel-property-mapper",
-            "oidc-sha256-pairwise-sub-mapper",
             "saml-user-attribute-mapper",
-            "oidc-full-name-mapper"
+            "oidc-address-mapper",
+            "oidc-full-name-mapper",
+            "oidc-sha256-pairwise-sub-mapper",
+            "saml-role-list-mapper",
+            "oidc-usermodel-attribute-mapper",
+            "oidc-usermodel-property-mapper"
           ]
         }
       },
@@ -1742,14 +1734,14 @@
         "subComponents": {},
         "config": {
           "allowed-protocol-mapper-types": [
+            "oidc-address-mapper",
             "saml-role-list-mapper",
             "saml-user-attribute-mapper",
-            "oidc-usermodel-property-mapper",
             "oidc-full-name-mapper",
             "oidc-sha256-pairwise-sub-mapper",
             "oidc-usermodel-attribute-mapper",
-            "oidc-address-mapper",
-            "saml-user-property-mapper"
+            "saml-user-property-mapper",
+            "oidc-usermodel-property-mapper"
           ]
         }
       },
