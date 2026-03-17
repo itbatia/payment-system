@@ -1,13 +1,22 @@
 package by.itbatia.psp.individualsapi.config;
 
+import java.util.Collection;
+
+import by.itbatia.psp.individualsapi.security.JwtGrantedAuthoritiesConverter;
 import org.jspecify.annotations.NonNull;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.convert.converter.Converter;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.server.reactive.ServerHttpResponse;
-import org.springframework.security.config.Customizer;
+import org.springframework.security.authentication.AbstractAuthenticationToken;
+import org.springframework.security.config.annotation.method.configuration.EnableReactiveMethodSecurity;
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
+import org.springframework.security.oauth2.server.resource.authentication.ReactiveJwtAuthenticationConverterAdapter;
 import org.springframework.security.web.server.SecurityWebFilterChain;
 import org.springframework.security.web.server.ServerAuthenticationEntryPoint;
 import org.springframework.security.web.server.authorization.ServerAccessDeniedHandler;
@@ -19,6 +28,7 @@ import reactor.core.publisher.Mono;
  */
 @Configuration
 @EnableWebFluxSecurity
+@EnableReactiveMethodSecurity
 public class SpringSecurityConfig {
 
     private static final String[] AUTH_BLACKLIST = {
@@ -42,7 +52,7 @@ public class SpringSecurityConfig {
     };
 
     @Bean
-    public SecurityWebFilterChain springSecurityFilterChain(ServerHttpSecurity http) {
+    public SecurityWebFilterChain springSecurityFilterChain(ServerHttpSecurity http, JwtGrantedAuthoritiesConverter authoritiesConverter) {
         http
             .csrf(ServerHttpSecurity.CsrfSpec::disable)
             .authorizeExchange(exchanges -> exchanges
@@ -52,7 +62,9 @@ public class SpringSecurityConfig {
                 .pathMatchers(METRICS).permitAll()
                 .anyExchange().authenticated()
             )
-            .oauth2ResourceServer(oauth2 -> oauth2.jwt(Customizer.withDefaults()))
+            .oauth2ResourceServer(oauth2 -> oauth2
+                .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter(authoritiesConverter)))
+            )
             .exceptionHandling(exceptionHandling ->
                 exceptionHandling
                     .authenticationEntryPoint(authenticationEntryPoint())
@@ -60,6 +72,13 @@ public class SpringSecurityConfig {
             );
 
         return http.build();
+    }
+
+    @Bean
+    public Converter<@NonNull Jwt, Mono<@NonNull AbstractAuthenticationToken>> jwtAuthenticationConverter(Converter<@NonNull Jwt, Collection<GrantedAuthority>> authoritiesConverter) {
+        JwtAuthenticationConverter converter = new JwtAuthenticationConverter();
+        converter.setJwtGrantedAuthoritiesConverter(authoritiesConverter);
+        return new ReactiveJwtAuthenticationConverterAdapter(converter);
     }
 
     @Bean
