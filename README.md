@@ -242,7 +242,7 @@ public Mono<TokenResponse> login(String username, String password) {
 📊 **Дашборд в Grafana**
 
 Дашборд [individuals-api](infrastructure/grafana/dashboards/individuals-api-dashboard.json) автоматически загружается при старте
-контейнера `Grafana` (через `provisioning/dashboards/`). Он включает **4 ключевые панели**:
+контейнера `Grafana` (через `infrastructure/provisioning/dashboards/`). Он включает **4 ключевые панели**:
 
 1. Общее количество логинов и регистраций (за последний час)  
    → Показывает абсолютное число событий (`increase(...)`) с цветовой индикацией:  
