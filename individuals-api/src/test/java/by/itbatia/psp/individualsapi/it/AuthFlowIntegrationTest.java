@@ -2,17 +2,17 @@ package by.itbatia.psp.individualsapi.it;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
-import by.itbatia.individualsapi.dto.ErrorResponse;
-import by.itbatia.individualsapi.dto.TokenRefreshRequest;
-import by.itbatia.individualsapi.dto.TokenResponse;
-import by.itbatia.individualsapi.dto.UserInfoResponse;
-import by.itbatia.individualsapi.dto.UserLoginRequest;
-import by.itbatia.individualsapi.dto.UserRegistrationRequest;
-import by.itbatia.psp.individualsapi.config.KeycloakTestcontainerConfig;
+import by.itbatia.psp.individualsapi.dto.ErrorResponse;
+import by.itbatia.psp.individualsapi.dto.TokenRefreshRequest;
+import by.itbatia.psp.individualsapi.dto.TokenResponse;
+import by.itbatia.psp.individualsapi.dto.UserInfoResponse;
+import by.itbatia.psp.individualsapi.dto.UserLoginRequest;
+import by.itbatia.psp.individualsapi.dto.UserRegistrationRequest;
 import by.itbatia.psp.individualsapi.util.EmailUtil;
 import by.itbatia.psp.individualsapi.util.TokenRefreshRequestUtil;
 import by.itbatia.psp.individualsapi.util.UserLoginRequestUtil;
 import by.itbatia.psp.individualsapi.util.UserRegistrationRequestUtil;
+import dasniko.testcontainers.keycloak.KeycloakContainer;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,14 +20,33 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webtestclient.autoconfigure.AutoConfigureWebTestClient;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.reactive.server.WebTestClient;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
 /**
  * @author Batsian_SV
  */
+@Testcontainers
+@ActiveProfiles("test")
 @AutoConfigureWebTestClient
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-class AuthFlowIntegrationTest extends KeycloakTestcontainerConfig {
+class AuthFlowIntegrationTest {
+
+    @Container
+    static final KeycloakContainer KEYCLOAK_CONTAINER = new KeycloakContainer("quay.io/keycloak/keycloak:26.5")
+        .withRealmImportFile("test-realm-config.json");
+
+    @DynamicPropertySource
+    static void configureProperties(DynamicPropertyRegistry registry) {
+        registry.add("individuals-api.keycloak.base-url", KEYCLOAK_CONTAINER::getAuthServerUrl);
+        registry.add("individuals-api.keycloak.realm", () -> "individuals");
+        registry.add("individuals-api.keycloak.client-id", () -> "individuals-api");
+        registry.add("individuals-api.keycloak.client-secret", () -> "test-secret");
+    }
 
     private static final String PASSWORD = "SecurePass1!";
 

@@ -2,7 +2,7 @@ package by.itbatia.psp.individualsapi.util;
 
 import java.util.List;
 
-import by.itbatia.individualsapi.dto.UserInfoResponse;
+import by.itbatia.psp.individualsapi.dto.UserInfoResponse;
 import by.itbatia.psp.individualsapi.security.JwtGrantedAuthoritiesConverter;
 import lombok.experimental.UtilityClass;
 import org.springframework.security.oauth2.jwt.Jwt;

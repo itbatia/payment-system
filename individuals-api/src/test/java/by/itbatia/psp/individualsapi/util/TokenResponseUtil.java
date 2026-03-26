@@ -1,6 +1,6 @@
 package by.itbatia.psp.individualsapi.util;
 
-import by.itbatia.individualsapi.dto.TokenResponse;
+import by.itbatia.psp.individualsapi.dto.TokenResponse;
 import lombok.experimental.UtilityClass;
 
 /**

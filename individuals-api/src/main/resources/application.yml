@@ -2,7 +2,7 @@
 # BASE config                                                                                                          #
 # ==================================================================================================================== #
 server:
-  port: 8081
+  port: ${SERVER_PORT}
 
 info:
   application:
@@ -12,7 +12,7 @@ info:
 
 logging:
   level:
-    by.itbatia.psp.individualsapi.service.impl.TokenServiceImpl: INFO
+    by.itbatia.psp.individualsapi.service.impl.TokenServiceImpl: ${LOG_LEVEL_TOKEN_SERVICE}
 
 # ==================================================================================================================== #
 # APPLICATION config                                                                                                   #
@@ -21,11 +21,12 @@ individuals-api:
   swagger:
     local-server: http://localhost
   keycloak:
-    realm: individuals
-    base-url: http://localhost:8080
-    client-id: individuals-api
-    client-secret: 9nekCm9JrhldqeBx5bw00LIzIBRYve6l
-    connection-timeout: 5000
+    realm: ${KC_REALM}
+    base-url: ${KC_BASE_URL}
+    client-id: ${KC_CLIENT_ID}
+    client-secret: ${KC_CLIENT_SECRET}
+    connection-timeout: ${KC_CONNECTION_TIMEOUT}
+    admin-token-caching-time-in-sec: ${KC_ADMIN_TOKEN_CACHING_TIME_IN_SEC}
 
 # ==================================================================================================================== #
 # SPRING config                                                                                                        #
@@ -44,7 +45,7 @@ management:
   prometheus:
     metrics:
       export:
-        enabled: true
+        enabled: ${EXPORT_METRICS_ENABLED}
   endpoints:
     web:
       exposure:

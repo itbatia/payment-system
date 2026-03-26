@@ -4,112 +4,281 @@ info:
   description: REST API для регистрации, логина, обновления токена и получения информации о пользователе через Keycloak.
   version: 1.0.0
 servers:
-  - url: http://localhost:8081/v1
+  - url: http://localhost:8081/api/v1
 
 paths:
   /auth/registration:
     post:
-      operationId: userRegistration
-      summary: Регистрация пользователя
+      operationId: registerUser
+      summary: User registration
+      description: |
+        Registers a new user and returns authentication tokens.
+        
+        **Validation rules:**
+        - Email must be in valid format
+        - Password must meet security requirements
+        - Password and confirmation must match exactly
+      tags:
+        - Authentication
       requestBody:
+        description: User registration details
         required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/UserRegistrationRequest'
+            examples:
+              exampleOfCreatingUser:
+                summary: Example of creating a user
+                description: |
+                  **Field requirements:**
+                  - `email`: valid email format (e.g., user@example.com)
+                  - `password`: at least 8 characters, including uppercase, lowercase, and digits
+                  - `confirm_password`: must exactly match `password`
+                value:
+                  email: "example@qmail.com"
+                  password: "SecurePass123!"
+                  confirm_password: "SecurePass123!"
       responses:
         '201':
-          description: Успешная регистрация
+          description: User created successfully. Returns tokens.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/TokenResponse'
+              examples:
+                Successful Response:
+                  summary: Example of a response
+                  value:
+                    access_token: "eyJhbGciOiJSUzI1NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJ...<truncated>"
+                    refresh_token: "eyJhbGciOiJIUzUxMiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICI...<truncated>"
+                    expires_in: 300
+                    token_type: "Bearer"
         '400':
-          description: Ошибка валидации
+          description: Bad request. Validation failed
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                ErrorResponse:
+                  summary: Example of a response
+                  value:
+                    error: "Password and confirmation don't match"
+                    status: 400
+        '403':
+          description: Forbidden. Server misconfiguration (contact admin).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                ErrorResponse:
+                  summary: Example of a response
+                  value:
+                    error: "You don't have permission to access this resource."
+                    status: 403
         '409':
-          description: Пользователь уже существует
+          description: Conflict. User with this email already exists.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                ErrorResponse:
+                  summary: Example of a response
+                  value:
+                    error: "User exists with same email"
+                    status: 409
 
   /auth/login:
     post:
-      operationId: userLogin
-      summary: Аутентификация пользователя
+      operationId: login
+      summary: User login
+      description: |
+        Authenticates user credentials and returns access/refresh tokens.
+
+        **Important:**
+        - No local database lookup — credentials are validated directly against Keycloak
+        - Returns 401 if email/password combination is invalid
+        - This endpoint is public (no authentication required)
+      tags:
+        - Authentication
       requestBody:
+        description: User login credentials
         required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/UserLoginRequest'
+            examples:
+              LoginRequestExample:
+                summary: Valid login credentials
+                value:
+                  email: "user@example.com"
+                  password: "SecurePass123!"
       responses:
         '200':
-          description: Успешная аутентификация
+          description: Authentication successful. Returns access and refresh tokens.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/TokenResponse'
-        '401':
-          description: Неверный логин или пароль
+              examples:
+                SuccessfulLoginResponse:
+                  summary: Tokens issued successfully
+                  value:
+                    access_token: "eyJhbGciOiJSUzI1NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJ...<truncated>"
+                    refresh_token: "eyJhbGciOiJIUzUxMiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICI...<truncated>"
+                    expires_in: 300
+                    token_type: "Bearer"
+        '400':
+          description: Bad request. Validation failed (e.g., missing fields or invalid email format)
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                ValidationError:
+                  summary: Input validation failed
+                  value:
+                    error: "Email must be a valid email address"
+                    status: 400
+        '401':
+          description: Unauthorized. Invalid email or password
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                InvalidCredentials:
+                  summary: Authentication failed
+                  value:
+                    error: "Invalid user credentials"
+                    status: 401
 
   /auth/refresh-token:
     post:
-      operationId: accessTokenRefresh
-      summary: Обновление токена доступа
+      operationId: refreshToken
+      summary: Refresh access token
+      description: |
+        Exchanges a valid refresh token for a new access token (and optionally a new refresh token).
+
+        **Important:**
+        - The provided refresh token must be valid and not expired
+        - This endpoint is public (no authentication required)
+        - Client credentials are handled internally by the service
+      tags:
+        - Authentication
       requestBody:
+        description: Refresh token request
         required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/TokenRefreshRequest'
+            examples:
+              RefreshTokenExample:
+                summary: Valid refresh token request
+                value:
+                  refresh_token: "eyJhbGciOiJIUzUxMiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICI...<truncated>"
       responses:
         '200':
-          description: Токен успешно обновлён
+          description: Access token successfully refreshed
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/TokenResponse'
-        '401':
-          description: Недействительный или просроченный refresh token
+              examples:
+                SuccessfulRefreshResponse:
+                  summary: New tokens issued
+                  value:
+                    access_token: "eyJhbGciOiJSUzI1NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJ...<truncated>"
+                    refresh_token: "eyJhbGciOiJIUzUxMiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICI...<truncated>"
+                    expires_in: 300
+                    token_type: "Bearer"
+        '400':
+          description: Bad request. Missing or invalid refresh token
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                MissingRefreshToken:
+                  summary: Validation error
+                  value:
+                    error: "RefreshToken field is required"
+                    status: 400
+        '401':
+          description: Unauthorized. Invalid, expired, or revoked refresh token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                InvalidRefreshToken:
+                  summary: Token validation failed
+                  value:
+                    error: "Token is not active"
+                    status: 401
 
   /auth/me:
     get:
-      operationId: getUserInfo
-      summary: Получение данных текущего пользователя
+      operationId: getCurrentUser
+      summary: Get current user profile
+      description: |
+        Retrieves detailed information about the currently authenticated user.
+
+        **Authentication requirements:**
+        - The request must include a valid `Authorization: Bearer <access_token>` header.
+        - The access token must be issued by Keycloak for the same realm as the service.
+        - The token must be active and not expired.
+
+        **How it works:**
+        1. The service validates the JWT access token using Spring Security and Keycloak's public keys.
+        2. It extracts the user identifier (`sub` claim) from the token.
+        3. It calls Keycloak Admin API (`GET /admin/realms/{realm}/users/{id}`) to fetch the full user profile.
+        4. It maps Keycloak's `UserRepresentation` to a simplified `UserInfoResponse` DTO.
+
+        **Security note:**
+        This endpoint does **not** accept credentials (username/password). It only works with a valid OAuth2 access token.
+
+        **Error scenarios:**
+        - `401 Unauthorized`: Missing, invalid, or expired token.
+        - `404 Not Found`: User exists in token but was deleted in Keycloak.
+      tags:
+        - Authentication
       security:
-        - bearerAuth: []
+        - bearerAuth: [ ]
       responses:
         '200':
-          description: Данные пользователя
+          description: User profile retrieved successfully
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/UserInfoResponse'
+              examples:
+                SuccessfulResponse:
+                  summary: Example of a valid user profile
+                  value:
+                    id: "a1b2c3d4-e5f6-7890-g1h2-i3j4k5l6m7n8"
+                    email: "user@example.com"
+                    created_at: "2026-02-25T17:01:53.471Z"
+                    roles: [ ]
         '401':
-          description: Недействительный токен
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
+          description: Unauthorized. Invalid, missing, or expired access token
         '404':
-          description: Пользователь не найден
+          description: Not Found. User referenced in token does not exist in Keycloak
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                UserNotFound:
+                  summary: User was deleted after token issuance
+                  value:
+                    error: "Authentication error: User not found"
+                    status: 404
 
 components:
   securitySchemes:
@@ -121,7 +290,7 @@ components:
   schemas:
     UserRegistrationRequest:
       type: object
-      required: [email, password, confirm_password]
+      required: [ email, password, confirm_password ]
       properties:
         email:
           type: string
@@ -133,7 +302,7 @@ components:
 
     UserLoginRequest:
       type: object
-      required: [email, password]
+      required: [ email, password ]
       properties:
         email:
           type: string
@@ -143,7 +312,7 @@ components:
 
     TokenRefreshRequest:
       type: object
-      required: [refresh_token]
+      required: [ refresh_token ]
       properties:
         refresh_token:
           type: string

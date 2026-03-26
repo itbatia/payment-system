@@ -13,8 +13,8 @@ import static by.itbatia.psp.individualsapi.util.KeycloakConstantUtil.URI_TO_CRE
 import static by.itbatia.psp.individualsapi.util.KeycloakConstantUtil.URI_TO_GET_USER;
 import static by.itbatia.psp.individualsapi.util.KeycloakConstantUtil.USERNAME;
 
-import by.itbatia.individualsapi.dto.TokenResponse;
-import by.itbatia.individualsapi.dto.UserInfoResponse;
+import by.itbatia.psp.individualsapi.dto.TokenResponse;
+import by.itbatia.psp.individualsapi.dto.UserInfoResponse;
 import by.itbatia.psp.individualsapi.dto.KeycloakUserRepresentation;
 import by.itbatia.psp.individualsapi.property.KeycloakProperties;
 import by.itbatia.psp.individualsapi.util.KeycloakUtil;

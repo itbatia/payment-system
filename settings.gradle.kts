@@ -1,4 +1,8 @@
 pluginManagement {
+    repositories {
+        gradlePluginPortal()
+        mavenCentral()
+    }
     val springBootVersion = providers.gradleProperty("springBootVersion").get()
     val springDependencyManagementVersion = providers.gradleProperty("springDependencyManagementVersion").get()
     val openapiGeneratorVersion = providers.gradleProperty("openapiGeneratorVersion").get()

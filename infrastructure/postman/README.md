@@ -2,7 +2,7 @@
 
 Для быстрого тестирования API используйте Postman-коллекцию:
 
-📁 [Payment-system.postman_collection](/postman/Payment-system.postman_collection.json)
+📁 [Payment-system.postman_collection](/infrastructure/postman/Payment-system.postman_collection.json)
 
 🔹 Примеры сценариев для демо:
 

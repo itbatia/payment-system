@@ -1,0 +1,49 @@
+                                             ***********************
+                                             *****   Grafana   *****
+                                             ***********************
+
+========================================================================================================================
+📁 1. provisioning/datasources/prometheus.yml
+
+apiVersion: 1
+datasources:
+  - name: Prometheus
+    type: prometheus
+    uid: PROMETHEUS_DS            // фиксированный идентификатор, он же в JSON-дашборде ("uid": "PROMETHEUS_DS"). Источник (БД)
+    url: http://prometheus:9090   // обращается к сервису prometheus из Docker Compose по DNS-имени.
+    access: proxy                 // Grafana будет проксировать запросы к Prometheus через себя (безопасно, не требует CORS).
+    isDefault: true               // true — все новые панели будут использовать этот источник по умолчанию.
+
+Автоматически создаёт источник данных (datasource) в Grafana при старте.
+
+========================================================================================================================
+📁 2. provisioning/dashboards/all.yml (или любой .yml в dashboards/)
+
+apiVersion: 1
+providers:
+  - name: 'default'
+    orgId: 1              // Организация (по умолчанию — 1)
+    folder: ''            // Дашборды будут в корне (можно указать имя папки, например "Auth" )
+    type: file
+    disableDeletion: true // Нельзя удалять через UI
+    editable: true        // Можно редактировать дашборд в UI
+    options:
+      path: /var/lib/grafana/dashboards
+
+========================================================================================================================
+🔍 Что делает:
+- Говорит Grafana: «Загружай все .json-файлы из указанной папки как дашборды».
+- path: /var/lib/grafana/dashboards — это внутренний путь в контейнере Grafana.
+- В docker-compose.yml монтируется:
+            volumes:
+              - ./grafana/dashboards:/var/lib/grafana/dashboards
+→ значит, .json-файлы из локальной папки ./grafana/dashboards/ попадут в контейнер и будут автоматически загружены.
+
+========================================================================================================================
+🧩 Как это работает вместе?
+
+1. При старте контейнера Grafana читает всё из ./grafana/provisioning/.
+2. Создаёт datasource Prometheus с UID PROMETHEUS_DS.
+3. Сканирует папку /var/lib/grafana/dashboards (т.е. ./grafana/dashboards/ из проекта).
+4. Находит individuals-api-dashboard.json.
+5. Загружает его, подставляя datasource по uid: "PROMETHEUS_DS" → всё работает.

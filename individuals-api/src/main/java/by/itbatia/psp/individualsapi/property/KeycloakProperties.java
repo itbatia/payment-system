@@ -15,4 +15,5 @@ public class KeycloakProperties {
     private String clientId;
     private String clientSecret;
     private int connectionTimeout;
+    private int adminTokenCachingTimeInSec;
 }

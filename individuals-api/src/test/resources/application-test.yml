@@ -1,18 +1,30 @@
 # ==================================================================================================================== #
 # BASE config                                                                                                          #
 # ==================================================================================================================== #
+server:
+  port: 8081
 
 logging:
   level:
-    by.itbatia.psp.individualsapi.service.impl.TokenServiceImpl: ${LOG_LEVEL_TOKEN_SERVICE}
+    by.itbatia.psp.individualsapi.service.impl.TokenServiceImpl: INFO
 
 # ==================================================================================================================== #
 # APPLICATION config                                                                                                   #
 # ==================================================================================================================== #
 individuals-api:
   keycloak:
-    realm: ${KC_REALM}
-    base-url: ${KC_BASE_URL}
-    client-id: ${KC_CLIENT_ID}
-    client-secret: ${KC_CLIENT_SECRET}
-    connection-timeout: ${KC_CONNECTION_TIMEOUT}
+    realm: individuals
+    base-url: http://localhost:8080
+    client-id: individuals-api
+    client-secret: test-secret
+    connection-timeout: 5000
+    admin-token-caching-time-in-sec: 290
+
+# ==================================================================================================================== #
+# METRICS config                                                                                                       #
+# ==================================================================================================================== #
+management:
+  prometheus:
+    metrics:
+      export:
+        enabled: false

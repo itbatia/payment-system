@@ -1,8 +1,18 @@
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////                   Подключение плагинов + декларация версии Java для Spring Boot и Gradle                   //////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 plugins {
     java
     id("org.springframework.boot")
     id("io.spring.dependency-management")
     id("org.openapi.generator")
+}
+
+java {
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of(project.property("javaVersion").toString().toInt()))
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -90,20 +100,32 @@ openApiGenerate {
     generatorName.set("spring")
     inputSpec.set("$rootDir/individuals-api/openapi/individuals-api.yaml")
     outputDir.set(layout.buildDirectory.dir("generated-sources/openapi").get().asFile.absolutePath)
-    modelPackage.set("by.itbatia.individualsapi.dto")
+    modelPackage.set("by.itbatia.psp.individualsapi.dto")
+    apiPackage.set("by.itbatia.psp.individualsapi.api")
 
     globalProperties.set(
         mapOf(
-            "models" to "",
-            "apis" to "false",
-            "supportingFiles" to "false"
+            "models" to "",                         // ← включить генерацию DTO (""=all)
+            "apis" to "",                           // ← включить генерацию API (""=all)
+            "supportingFiles" to "false"            // ← не включить генерацию Utils (-ApiUtil)
         )
     )
 
-    configOptions.set(
+    configOptions.set(                              // ← docs - https://openapi-generator.tech/docs/generators/spring/
         mapOf(
-            "useJakartaEe" to "true",
-            "openApiNullable" to "false"
+            "useJakartaEe" to "true",               // ← использует jakarta.* вместо javax.* (требуется для Spring Boot 4)
+            "useSpringBoot4" to "true",             // ← сгенерировать код и предоставить зависимости для использования со Spring Boot 4.x (+ включает Jakarta EE)
+            "openApiNullable" to "false",           // ← не генерировать аннотации @Nullable/@NonNull
+
+            "interfaceOnly" to "true",              // ← только интерфейсы, без реализации (не генерирует: class AuthApiController implements AuthApi)
+            "skipDefaultInterface" to "true",       // ← не генерировать default-реализацию интерфейсов (только сигнатура метода, без тела)
+
+            "reactive" to "true",                   // ← использовать Mono/Flux в возвращаемом значении (!!! Но и RequestBody заворачивает тоже)
+            "includeHttpRequestContext" to "false", // ← не включать ServerWebExchange в качестве доп параметра в генерируемые методы
+
+            "useBeanValidation" to "false",         // ← Use BeanValidation API annotations (отключает @Validated на классе и @Valid на параметрах)
+            "performBeanValidation" to "false",     // ← Use Bean Validation Impl. to perform BeanValidation (опционально)
+            "useSpringBuiltInValidation" to "false" // ← Disable @Validated at the class level when using built-in validation. (опционально)
         )
     )
 }
