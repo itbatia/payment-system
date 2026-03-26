@@ -1,0 +1,338 @@
+                                          **************************
+                                          *****   Dockerfile   *****
+                                          **************************
+
+
+========================================================================================================================
+649,03 MB:
+========================================================================================================================
+
+# STAGE 1: Извлечение слоёв
+FROM amazoncorretto:25 AS builder
+
+WORKDIR /project
+
+# Копируем готовый JAR (собранный вне Docker заранее)
+COPY individuals-api/build/libs/individuals-api.jar /project/app.jar
+
+RUN echo "=== Extract layers from JAR ===" && \
+    java -Djarmode=tools -jar app.jar extract --layers --launcher && \
+    echo "=== Delete executable JAR ===" && \
+    rm -f app.jar
+
+# STAGE 2: Финальный образ
+FROM amazoncorretto:25-jre
+
+RUN echo "=== Install curl for healthcheck + other utils ===" && \
+    yum install -y --allowerasing curl shadow-utils findutils && \
+    echo "=== Clear 'yum' package manager cache to reduce image size ===" && \
+    yum clean all && \
+    echo "=== Create unprivileged user ===" && \
+    groupadd -g 1001 pspuser && \
+    useradd -u 1001 -g pspuser -m -s /bin/false pspuser
+
+WORKDIR /app
+
+# Копируем слои из builder-stage
+COPY --from=builder /project/app/dependencies/ ./
+COPY --from=builder /project/app/spring-boot-loader/ ./
+COPY --from=builder /project/app/snapshot-dependencies/ ./
+COPY --from=builder /project/app/application/ ./
+
+RUN echo "=== Remove unnecessary JARs ===" && \
+    find BOOT-INF/lib/ -name "*-sources.jar" -delete && \
+    find BOOT-INF/lib/ -name "*-javadoc.jar" -delete && \
+    find BOOT-INF/lib/ -name "*-tests.jar" -delete && \
+    chown -R pspuser:pspuser /app
+
+USER pspuser
+
+EXPOSE 8081
+
+ENTRYPOINT ["java", "-Dspring.profiles.active=docker", "org.springframework.boot.loader.launch.JarLauncher"]
+
+
+========================================================================================================================
+FROM amazoncorretto:25 AS builder
+========================================================================================================================
+Использует официальный образ Amazon Corretto JDK 25 как временный builder-образ для извлечения слоёв Spring Boot-приложения.
+
+
+========================================================================================================================
+WORKDIR /project
+========================================================================================================================
+Устанавливает рабочую директорию внутри контейнера — сюда будет скопирован JAR.
+
+
+========================================================================================================================
+COPY individuals-api/build/libs/individuals-api.jar /project/app.jar
+========================================================================================================================
+Копирует готовый executable JAR, собранный вне Docker (например, через ./gradlew :individuals-api:bootJar), в контейнер под именем app.jar.
+
+
+========================================================================================================================
+java -Djarmode=tools -jar app.jar extract --layers --launcher
+========================================================================================================================
+Запускает JAR в специальном режиме (jarmode=tools), чтобы извлечь его содержимое:
+--layers — разделяет зависимости на слои (dependencies/, snapshot-dependencies/, application/),
+--launcher — извлекает загрузчик Spring Boot (org.springframework.boot.loader.launch.JarLauncher).
+
+💡 Результат: создаётся папка /project/app/ с подкаталогами dependencies/, application/ и т.д.
+
+/project/
+└── app/                     ← имя папки = имя JAR без расширения
+    ├── dependencies/        ← обычные зависимости (non-SNAPSHOT)
+    ├── snapshot-dependencies/← SNAPSHOT-зависимости (если есть)
+    ├── application/         ← ваш скомпилированный код (classes + resources)
+    └── spring-boot-loader/  ← загрузчик Spring Boot
+
+
+========================================================================================================================
+rm -f app.jar
+========================================================================================================================
+Удаляет исходный JAR-файл, так как он больше не нужен.
+
+
+========================================================================================================================
+FROM amazoncorretto:25
+========================================================================================================================
+Начинает новый, чистый образ на базе того же Corretto, но без Gradle, исходников и builder-артефактов.
+
+
+========================================================================================================================
+yum install -y --allowerasing curl shadow-utils findutils
+========================================================================================================================
+Устанавливает необходимые утилиты:
+curl — для healthcheck в docker-compose.yml -> individuals-api (["CMD", "curl", "-f", "http://localhost:8081/actuator/health"]),
+       curl обязан быть внутри контейнера, иначе healthcheck будет падать.
+shadow-utils — содержит useradd, groupadd (управление пользователями), нужен для RUN groupadd и RUN useradd
+findutils — содержит команду find (для удаления ненужных JAR-файлов -> RUN find BOOT-INF/lib/ ...)
+💡 --allowerasing позволяет заменить curl-minimal (если он был) на полную версию curl.
+
+
+========================================================================================================================
+yum clean all
+========================================================================================================================
+Очищает кэш yum, чтобы уменьшить размер финального образа.
+
+
+========================================================================================================================
+groupadd -g 1001 pspuser && useradd -u 1001 -g pspuser -m -s /bin/false pspuser
+========================================================================================================================
+Создаёт непривилегированного пользователя pspuser (UID/GID = 1001) для запуска приложения — это best practice безопасности.
+
+
+========================================================================================================================
+WORKDIR /app
+========================================================================================================================
+Устанавливаем рабочую директорию внутри контейнера — все команды будут выполняться в /app.
+
+
+========================================================================================================================
+COPY --from=builder /project/app/dependencies/ ./
+COPY --from=builder /project/app/spring-boot-loader/ ./
+COPY --from=builder /project/app/snapshot-dependencies/ ./
+COPY --from=builder /project/app/application/ ./
+========================================================================================================================
+Копирует только необходимые слои из builder-стадии:
+1) dependencies/ — обычные зависимости,
+2) snapshot-dependencies/ — SNAPSHOT-зависимости (если есть),
+3) application/ — скомпилированный код приложения,
+4) spring-boot-loader/ — загрузчик Spring Boot.
+💡 Это позволяет эффективно кэшировать слои в Docker: если вы поменяли только код — пересоберётся только application/.
+
+После копирования структура в /app будет объединена в формат, понятный Spring Boot JarLauncher:
+   /app/
+   ├── BOOT-INF/
+   │   ├── lib/        ← все зависимости (dependencies + snapshot-dependencies + application/lib)
+   │   └── classes/    ← ваш код и ресурсы (из application/classes)
+   ├── org/            ← Spring Boot loader (из spring-boot-loader/)
+   └── classpath.idx   ← порядок загрузки classpath (сгенерирован автоматически)
+
+
+========================================================================================================================
+find BOOT-INF/lib/ -name "*-sources.jar" -delete
+find BOOT-INF/lib/ -name "*-javadoc.jar" -delete
+find BOOT-INF/lib/ -name "*-tests.jar" -delete
+========================================================================================================================
+→ Удаляет ненужные артефакты, которые иногда попадают в сборку (например, если зависимости включают sources/javadoc).
+→ Это уменьшает размер образа и повышает безопасность.
+
+
+========================================================================================================================
+chown -R pspuser:pspuser /app
+========================================================================================================================
+→ Назначает владельца всех файлов приложения — требуется для запуска от непривилегированного пользователя.
+
+
+========================================================================================================================
+USER pspuser
+========================================================================================================================
+→ Переключается на пользователя pspuser — приложение не будет запускаться от root.
+
+
+========================================================================================================================
+EXPOSE 8081
+========================================================================================================================
+→ Документирует, что контейнер слушает порт 8081 (не открывает его, только метаданные).
+
+
+========================================================================================================================
+ENTRYPOINT ["java", "org.springframework.boot.loader.launch.JarLauncher"]
+========================================================================================================================
+→ Запускает приложение через Spring Boot JarLauncher, который использует структуру слоёв (BOOT-INF/, classpath.idx и т.д.).
+
+
+========================================================================================================================
+USER pspuser
+========================================================================================================================
+Переключаемся на пользователя pspuser — все последующие команды будут выполняться от его имени.
+
+
+========================================================================================================================
+EXPOSE 8081
+========================================================================================================================
+> **Документирует**, что приложение слушает порт `8081`.
+> На самом деле, Docker Compose сам пробрасывает порты, но это хорошая практика.
+
+
+========================================================================================================================
+ENTRYPOINT ["java", "org.springframework.boot.loader.launch.JarLauncher"]
+========================================================================================================================
+Запускаем приложение через JarLauncher — это специальный загрузчик Spring Boot для слоистых JAR'ов.
+Он автоматически найдёт классы и зависимости в текущей директории.
+
+
+
+Итого лог:
+
+docker-compose up -d --build
+
+#1 [internal] load local bake definitions
+#1 reading from stdin 588B 0.0s done
+#1 DONE 0.0s
+
+#2 [internal] load build definition from Dockerfile
+#2 transferring dockerfile: 1.63kB 0.0s done
+#2 DONE 0.1s
+
+#3 [internal] load metadata for docker.io/library/amazoncorretto:25
+#3 ...
+
+#4 [auth] library/amazoncorretto:pull token for registry-1.docker.io
+#4 DONE 0.0s
+
+#3 [internal] load metadata for docker.io/library/amazoncorretto:25
+#3 DONE 0.9s
+
+#5 [internal] load .dockerignore
+#5 transferring context: 2B done
+#5 DONE 0.0s
+
+#6 [builder 1/4] FROM docker.io/library/amazoncorretto:25@sha256:d91611b395c776e140488a410e53f017f05d1afe4d9016c175332acddb419e49
+#6 DONE 0.0s
+
+#7 [internal] load build context
+#7 transferring context: 52.92MB 4.1s done
+#7 DONE 4.1s
+
+#8 [builder 2/4] WORKDIR /project
+#8 CACHED
+
+#9 [builder 3/4] COPY individuals-api/build/libs/individuals-api.jar /project/app.jar
+#9 DONE 0.3s
+
+#10 [builder 4/4] RUN echo "=== Extract layers from JAR ===" &&     java -Djarmode=tools -jar app.jar extract --layers --launcher &&     echo "=== Delete executable JAR ===" &&     rm -f app.jar
+#10 0.386 === Extract layers from JAR ===
+#10 0.952 === Delete executable JAR ===
+#10 DONE 1.1s
+
+#11 [stage-1 5/8] COPY --from=builder /project/app/spring-boot-loader/ ./
+#11 CACHED
+
+#12 [stage-1 2/8] RUN echo "=== Install curl for healthcheck + other utils ===" &&     yum install -y --allowerasing curl shadow-utils findutils &&     echo "=== Clear 'yum' package manager cache to reduce image size ===" &&     yum clean all &&     echo "=== Create unprivileged user ===" &&     groupadd -g 1001 pspuser &&     useradd -u 1001 -g pspuser -m -s /bin/false pspuser
+#12 CACHED
+
+#13 [stage-1 3/8] WORKDIR /app
+#13 CACHED
+
+#14 [stage-1 4/8] COPY --from=builder /project/app/dependencies/ ./
+#14 CACHED
+
+#15 [stage-1 6/8] COPY --from=builder /project/app/snapshot-dependencies/ ./
+#15 CACHED
+
+#16 [stage-1 7/8] COPY --from=builder /project/app/application/ ./
+#16 DONE 0.0s
+
+#17 [stage-1 8/8] RUN echo "=== Remove unnecessary JARs ===" &&     find BOOT-INF/lib/ -name "*-sources.jar" -delete &&     find BOOT-INF/lib/ -name "*-javadoc.jar" -delete &&     find BOOT-INF/lib/ -name "*-tests.jar" -delete &&     chown -R pspuser:pspuser /app
+#17 0.299 === Remove unnecessary JARs ===
+#17 DONE 1.6s
+
+#18 exporting to image
+#18 exporting layers 0.1s done
+#18 writing image sha256:9e5474cbe7f85a164a7c931a487408a38b0f9d2b7038b32b0b1135c49b6e2de8 done
+#18 naming to docker.io/library/payment-system-individuals-api done
+#18 DONE 0.1s
+
+#19 resolving provenance for metadata file
+#19 DONE 0.0s
+
+========================================================================================================================
+646,14 MB:
+========================================================================================================================
+1) убрать echo
+2) amazoncorretto:25-jre не существует
+3) Использование curl обусловлено healthcheck в docker-compose для individuals-api.
+4) shadow-utils необходим для создания non-root пользователя.
+5) findutils убран как избыточный, т.к. Spring Boot не включает sources/javadoc в fat jar. при './gradlew clean :individuals-api:bootJar'
+
+
+FROM amazoncorretto:25 AS builder
+
+WORKDIR /project
+COPY individuals-api/build/libs/individuals-api.jar app.jar
+RUN java -Djarmode=tools -jar app.jar extract --layers
+
+FROM amazoncorretto:25
+
+RUN yum install -y --allowerasing curl shadow-utils && \
+    yum clean all
+
+WORKDIR /app
+
+COPY --from=builder /project/app/dependencies/ ./
+COPY --from=builder /project/app/spring-boot-loader/ ./
+COPY --from=builder /project/app/snapshot-dependencies/ ./
+COPY --from=builder /project/app/application/ ./
+
+RUN groupadd -g 1001 pspuser && \
+    useradd -u 1001 -g pspuser -m -s /bin/false pspuser && \
+    chown -R pspuser:pspuser /app
+
+USER pspuser
+
+EXPOSE 8081
+
+ENTRYPOINT ["java", "-Dspring.profiles.active=docker", "org.springframework.boot.loader.launch.JarLauncher"]
+
+========================================================================================================================
+646,69 MB:
+========================================================================================================================
+FROM amazoncorretto:25
+
+WORKDIR /app
+
+COPY individuals-api/build/libs/individuals-api.jar app.jar
+
+RUN yum install -y --allowerasing curl shadow-utils && \
+    yum clean all && \
+    groupadd -g 1001 pspuser && \
+    useradd -u 1001 -g pspuser -m -s /bin/false pspuser && \
+    chown -R pspuser:pspuser /app
+
+USER pspuser
+
+EXPOSE 8081
+
+ENTRYPOINT ["java", "-Dspring.profiles.active=docker", "-jar", "app.jar"]

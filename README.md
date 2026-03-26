@@ -69,8 +69,10 @@ _Все сервисы должны быть в состоянии Up.
 
 Для быстрой демонстрации работы API используйте Postman-коллекцию:
 
-📁 `postman/Payment-system.postman_collection.json`  
-📁 `postman/README.md`
+📁 `infrastructure/postman/Payment-system.postman_collection.json`
+[link](/infrastructure/postman/Payment-system.postman_collection.json)  
+📁 `infrastructure/postman/README.md`
+[link](/infrastructure/postman/README.md)
 
 > Импортируйте её в Postman → запускайте REST-запросы.  
 > Сценарии для тестирования описаны в README.md.
@@ -131,18 +133,25 @@ _Все сервисы должны быть в состоянии Up.
 
 ```
 /payment-system  
-├── grafana/                # Provisioning дашбордов и источников
+├── infrastructure/         # Инфраструктура проекта
+│   ├── grafana/            # Provisioning дашбордов и источников
+│   ├── loki/               # Конфигурация Loki
+│   ├── postman/            # Postman-коллекции для демо
+│   ├── prometheus/         # Конфигурация Prometheus
+│   ├── promtail/           # Конфигурация Promtail
+│   ├── readme-sources/     # Ресурсы для README (картинки, схемы)
+│   └── developer/          # Заметки разработчика
+│
 ├── individuals-api/        # Исходный код сервиса
 │   ├── openapi/            # OpenAPI спецификация (YAML)
 │   ├── resources/          # Импортируемый realm-config.json для Keycloak
 │   ├── src/main/java/      # Код контроллеров, сервисов, DTO
+│   ├── build.gradle.kts    # Настройка модуля
 │   └── Dockerfile          # Инструкции для сборки Docker-образа
-├── loki/                   # Конфигурация Loki
-├── postman/                # Postman-коллекция для демо
-├── prometheus/             # Конфигурация Prometheus
-├── promtail/               # Конфигурация Promtail
-├── readme-sources/         # Статические ресурсы для README.md
+│
 ├── docker-compose.yml      # Основной compose-файл
+├── gradle.properties       # Управление версионностью проекта
+├── settings.gradle.kts     # Подключение модулей и plugin management
 └── README.md               # Этот файл
 ```
 
@@ -232,7 +241,7 @@ public Mono<TokenResponse> login(String username, String password) {
 
 📊 **Дашборд в Grafana**
 
-Дашборд [individuals-api](grafana/dashboards/individuals-api-dashboard.json) автоматически загружается при старте
+Дашборд [individuals-api](infrastructure/grafana/dashboards/individuals-api-dashboard.json) автоматически загружается при старте
 контейнера `Grafana` (через `provisioning/dashboards/`). Он включает **4 ключевые панели**:
 
 1. Общее количество логинов и регистраций (за последний час)  
@@ -261,8 +270,8 @@ public Mono<TokenResponse> login(String username, String password) {
 
 | Панель № |                      Скриншот                      |
 |:--------:|:--------------------------------------------------:|
-|  1 и 2   | ![](readme-sources/grafana-dashboard-screen-1.jpg) |
-|  3 и 4   | ![](readme-sources/grafana-dashboard-screen-2.jpg) |
+|  1 и 2   | ![](infrastructure/readme-sources/grafana-dashboard-screen-1.jpg) |
+|  3 и 4   | ![](infrastructure/readme-sources/grafana-dashboard-screen-2.jpg) |
 
 ## Дашборд логов
 
@@ -291,7 +300,7 @@ public Mono<TokenResponse> login(String username, String password) {
   корреляции со всплесками в метриках (например, рост 5xx-ответов в Prometheus).
 
 Скриншот с примером:
-![](readme-sources/grafana-dashboard-screen-3.jpg)
+![](infrastructure/readme-sources/grafana-dashboard-screen-3.jpg)
 
 ## Developers FYI
 
@@ -351,6 +360,9 @@ logging:
 
 ✅ Запустить все сервисы проекта в фоновом режиме:  
 `docker-compose up -d`
+
+✅ Запустить все сервисы проекта в фоновом режиме с пересборкой image:  
+`docker-compose up -d --build`
 
 ✅ Остановить и удалить контейнеры и сети:  
 `docker-compose down`

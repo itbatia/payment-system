@@ -1,6 +1,6 @@
 package by.itbatia.psp.individualsapi.service.impl;
 
-import by.itbatia.individualsapi.dto.TokenResponse;
+import by.itbatia.psp.individualsapi.dto.TokenResponse;
 import by.itbatia.psp.individualsapi.client.KeycloakClient;
 import by.itbatia.psp.individualsapi.enums.Meter;
 import by.itbatia.psp.individualsapi.service.MetricsService;

@@ -1,4 +1,3 @@
-version: '3.8'
 services:
   keycloak:
     image: quay.io/keycloak/keycloak:26.5
@@ -47,13 +46,15 @@ services:
     ports:
       - "8081:8081"
     environment:
-      SPRING_PROFILES_ACTIVE: docker
+      SERVER_PORT: 8081
+      LOG_LEVEL_TOKEN_SERVICE: DEBUG                      # DEBUG/INFO -> with/without: (log example) 'User with [username=test@mail.ru] has logged in'.
       KC_REALM: individuals                               # Name of the Keycloak realm used for authentication and user management.
       KC_BASE_URL: http://keycloak:8080                   # Base URL of the Keycloak server.
       KC_CLIENT_ID: individuals-api                       # Client ID registered in Keycloak for this service.
       KC_CLIENT_SECRET: 9nekCm9JrhldqeBx5bw00LIzIBRYve6l  # Secret associated with the Keycloak client. Must be hidden in production env.
       KC_CONNECTION_TIMEOUT: 5000                         # Timeout (in millis) for HTTP connections to the Keycloak server.
-      LOG_LEVEL_TOKEN_SERVICE: DEBUG                      # DEBUG/INFO -> with/without: (log example) 'User with [username=test@mail.ru] has logged in'.
+      KC_ADMIN_TOKEN_CACHING_TIME_IN_SEC: 290             # Admin token caching time. Must be less than the actual expires_in (expires_in = 300).
+      EXPORT_METRICS_ENABLED: true                        # Enable/disable export metrics by Prometheus.
     depends_on:
       keycloak:
         condition: service_healthy
@@ -73,7 +74,7 @@ services:
     ports:
       - "9090:9090"
     volumes:
-      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./infrastructure/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
     healthcheck:
       test: ["CMD", "wget", "--spider", "http://localhost:9090/-/healthy"]
       interval: 10s
@@ -87,7 +88,7 @@ services:
       - "3100:3100"
     command: -config.file=/etc/loki/local-config.yaml
     volumes:
-      - ./loki/loki-config.yaml:/etc/loki/local-config.yaml:ro
+      - ./infrastructure/loki/loki-config.yaml:/etc/loki/local-config.yaml:ro
       - loki_data:/loki                                                   # to save state between container restarts
     healthcheck:
       test: ["CMD", "wget", "--spider", "http://localhost:3100/ready"]
@@ -109,8 +110,8 @@ services:
       GF_SECURITY_ADMIN_USER: admin
       GF_SECURITY_ADMIN_PASSWORD: admin
     volumes:
-      - ./grafana/provisioning:/etc/grafana/provisioning
-      - ./grafana/dashboards:/var/lib/grafana/dashboards
+      - ./infrastructure/grafana/provisioning:/etc/grafana/provisioning
+      - ./infrastructure/grafana/dashboards:/var/lib/grafana/dashboards
     healthcheck:
       test: ["CMD", "wget", "--spider", "http://localhost:3000/api/health"]
       interval: 10s
@@ -121,7 +122,7 @@ services:
     image: grafana/promtail:3.5.12
     container_name: promtail
     volumes:
-      - ./promtail/promtail-config.yml:/etc/promtail/config.yml
+      - ./infrastructure/promtail/promtail-config.yml:/etc/promtail/config.yml
 #      - /var/run/docker.sock:/var/run/docker.sock                        # ← for Linux/macOS only
     command: -config.file=/etc/promtail/config.yml
     depends_on:

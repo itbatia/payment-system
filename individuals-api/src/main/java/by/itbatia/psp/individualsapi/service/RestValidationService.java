@@ -1,8 +1,8 @@
 package by.itbatia.psp.individualsapi.service;
 
-import by.itbatia.individualsapi.dto.TokenRefreshRequest;
-import by.itbatia.individualsapi.dto.UserLoginRequest;
-import by.itbatia.individualsapi.dto.UserRegistrationRequest;
+import by.itbatia.psp.individualsapi.dto.TokenRefreshRequest;
+import by.itbatia.psp.individualsapi.dto.UserLoginRequest;
+import by.itbatia.psp.individualsapi.dto.UserRegistrationRequest;
 import by.itbatia.psp.individualsapi.exception.api.BadRequestApiException;
 
 /**

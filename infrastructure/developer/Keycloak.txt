@@ -1,0 +1,420 @@
+                                          ************************
+                                          *****   Keycloak   *****
+                                          ************************
+  keycloak:
+    build:
+      context: .
+      dockerfile: individuals-api/resources/Dockerfile-keycloak
+
+# Dockerfile.keycloak
+FROM quay.io/keycloak/keycloak:26.5
+# Переключаемся на root для установки пакетов
+USER root
+# Устанавливаем curl через microdnf
+RUN microdnf install -y curl && \
+    microdnf clean all && \
+    rm -rf /var/cache/yum
+# Возвращаемся к пользователю keycloak (UID 1000)
+USER 1000
+
+========================================================================================================================
+
+healthcheck:
+  test: ["CMD", "curl", "-f", "http://localhost:8080/health"]  -> curl: command not found
+  test: ["CMD-SHELL", "echo > /dev/tcp/localhost/8080"]        -> TCP healthcheck
+
+========================================================================================================================
+
+                              ******************************************
+                              ***   🚀 Создание и настройка realm:   ***
+                              ******************************************
+
+✅ Шаг 1: Запустить Keycloak без --import-realm:
+    keycloak:
+      image: quay.io/keycloak/keycloak:26.5
+      command: start-dev
+
+docker-compose up keycloak keycloak-postgres
+
+========================================================================================================================
+
+✅ Шаг 2: Настройте администратора
+Можно пропустить Шаг 2 т.к. администратор задан в переменных окружения:
+        KC_BOOTSTRAP_ADMIN_USERNAME: admin
+        KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+При первом запуске Keycloak предложит создать администратора:
+Перейдите в браузере: http://localhost:8080
+Нажмите Administration Console
+Создайте пользователя:
+    Username: admin
+    Password: admin
+
+========================================================================================================================
+
+✅ Шаг 3: Создайте новый Realm
+В левом верхнем углу нажмите Master → Add realm
+Realm name: individuals
+Нажмите Create
+
+========================================================================================================================
+
+✅ Шаг 4: Настройте Realm Settings
+В разделе Realm settings → Login:
+        ✅ Enabled: ON
+        ✅ User registration: ON
+        ✅ Login with email: ON
+        ❌ Duplicate emails: OFF
+В разделе Tokens:
+        Access Token Lifespan: 5 minutes
+        Refresh Token Lifespan: ✅ Enabled -> ON
+        Refresh Token Lifespan: 30 days
+        Revoke Refresh Token: Disabled
+
+✅ Шаг 5: Создайте клиент
+Перейдите в Clients → Create client
+        Client type: OpenID Connect
+        Client ID: individuals-api
+        Нажмите Next
+Настройки клиента:
+        Client authentication: ✅ ON (confidential client)
+        Authentication flow: Standard flow → ❌ OFF
+        Direct access grants: ✅ ON (для password grant)
+        Service accounts roles: ✅ ON (для Admin API)
+Нажмите Save.
+
+========================================================================================================================
+
+✅ Шаг 6: Настройте Client Credentials
+В разделе Clients → individuals-api → Credentials:
+        Client authenticator: Client Id and Secret
+        Скопируйте Secret — он понадобится в application.yml (Client Secret: 9nekCm9JrhldqeBx5bw00LIzIBRYve6l)
+
+PS: Сервис (individuals-api) будет отправлять client_id + client_secret для получения токенов
+    Для стандартного OAuth2 flow (password grant, client credentials) нужен именно secret
+
+========================================================================================================================
+
+✅ Шаг 7: Настройте Client Scopes
+В разделе Clients → individuals-api → Client scopes → для offline_access поставить Default
+
+Результатом будет - изменение срока жизни refresh токена:
+        ❌ "refresh_expires_in": 1800 (1800 сек = 30 мин)
+        ✅ "refresh_expires_in": 2592000 (2592000 сек = 30 дней)
+
+- Default Client Scopes — это scopes, которые автоматически применяются ко всем запросам для этого клиента
+- offline_access — специальный scope, который говорит Keycloak: «Выдай offline refresh token с длительным сроком жизни»
+- Без этого scope Keycloak выдаёт только online refresh token (привязанный к SSO session)
+
+========================================================================================================================
+
+✅ Шаг 8: Настройте Protocol Mappers
+В разделе Clients → individuals-api → Client scopes → individuals-api-dedicated → Mappers → Add mapper:
+
+Mapper 1: Email (Add predefined mappers -> выбрать Email)
+        Name: email
+        Mapper type: User Property
+        User Attribute: email
+        ✅ Add to ID token: ON
+        ✅ Add to access token: ON
+        ✅ Add to userinfo: ON
+        ✅ Add to token introspection: ON
+Mapper 2: Full Name
+        Name: full name
+        Mapper type: Full Name
+        ✅ Add to ID token: ON
+        ✅ Add to access token: ON
+        ✅ Add to userinfo: ON
+        ✅ Add to token introspection: ON
+
+PS:
+Add to token introspection = ON означает, что эти поля будут доступны при:
+        Валидации токена через /protocol/openid-connect/token/introspect
+        Получении информации о пользователе через Admin API
+Это полезно для сценария /auth/me, когда сервис может получать данные пользователя через introspection или Admin API.
+
+========================================================================================================================
+
+✅ Шаг 9: Назначить service account'у роль manage-users
+
+1: Войдите в админку Keycloak (http://localhost:8080/admin → individuals → Clients → individuals-api)
+2: Перейдите во вкладку Service Account Roles
+3: В разделе Client Roles выберите realm-management
+4: Найдите роль manage-users и нажмите Add selected
+
+✅ После этого service account получит право создавать пользователей.
+
+========================================================================================================================
+
+✅ Шаг 10: Создайте роль пользователя
+Перейдите в Realm Roles → Create role
+        Role name: user
+        Description: Default user role
+Нажмите Save
+В Realm settings → User registration → Default roles → добавьте роль user (Assign role → Realm roles → user).
+
+========================================================================================================================
+
+✅ Шаг 11: Отключить обязательность firstName/lastName
+1. http://localhost:8080/admin → individuals → Realm Settings → User Profile
+2. Найдите атрибуты firstName и lastName
+3. Сделать "Required = false", или вообще удалить эти атрибуты из профиля, если они не нужны.
+
+💡 Если у вас нет вкладки "User Profile", значит, она отключена на уровне realm — и проблема в другом (см. ниже).
+🛠 Альтернатива: отключить User Profile полностью
+Если вы не используете расширенные атрибуты пользователей:
+1. Перейдите: Realm Settings → General
+2. Найдите опцию "User Profile Enabled"
+3. Установите OFF
+
+========================================================================================================================
+
+✅ Шаг 12: Удалить проверки на атрибут username
+1. http://localhost:8080/admin → individuals → Realm Settings → User Profile → Edit attribute
+2. Validations: 'username-prohibited-characters' → Delete
+
+========================================================================================================================
+
+✅ Шаг 13: Проверьте работу
+Создайте тестового пользователя в Users → Add user
+Установите пароль в Credentials → Set password
+Required user actions → Update password
+
+========================================================================================================================
+
+✅ Шаг 14: Проверьте по Best practices
+
+!!!!!!!!!! Keycloak различает два типа refresh-токенов:
+-----------------------------------------------------------------------------------------------------------------------
+Тип                       Когда выдаётся                                   Где настраивается
+-----------------------------------------------------------------------------------------------------------------------
+Обычный refresh token     При grant_type=password / authorization_code     Realm → Tokens → SSO Session Idle / Max
+Offline token             При scope=offline_access                         Realm → Tokens → Offline Session Idle / Max
+-----------------------------------------------------------------------------------------------------------------------
+
+----------------------------------------------------------
+В Realm Settings → Tokens (пример best practice):
+----------------------------------------------------------
+Параметр                Значение
+----------------------------------------------------------
+Access Token Lifespan -     300 (5 минут)
+Client Login Timeout  -      60
+Login Timeout         -    1800
+SSO Session Idle      -    1800 (30 минут) -> refresh-token
+SSO Session Max       -  604800 (7 дней = 7 × 24 × 3600)
+Offline Session Idle  - 2592000 (30 дней)
+Offline Session Max   - 2592000
+----------------------------------------------------------
+
+------------------------------------------------------------------------------------------------------------------------
+Best practices по сроку жизни токенов:
+------------------------------------------------------------------------------------------------------------------------
+Токен Рекомендуемый срок (на мой вкус)
+------------------------------------------------------------------------------------------------------------------------
+Access Token  - 5–15 минут (1-5 минут)                    - Минимизирует ущерб при утечке
+Refresh Token - 7–30 дней  (30 минут - 7 дней)            - Должен быть достаточно длинным для UX, но не вечным
+Offline Token - Месяцы или "пока пользователь не отзовёт" - Используется для долгоживущих приложений (мобильные, desktop)
+------------------------------------------------------------------------------------------------------------------------
+
+--------------------------------------------
+✅ Offline Session Max Limited = ON
+✅ Offline Session Max = 2592000 (30 дней)
+✅ Offline Session Idle = 604800 (7 дней)
+--------------------------------------------
+
+========================================================================================================================
+
+✅ Шаг 15: Настроить scope передаваемые в токене:
+
+Зайти в свой realm → Clients → individuals-api → Client scopes → offline_access: сделать опциональным
+Зайти в свой realm → Clients → individuals-api → Client scopes → acr сделать опциональным (уберёт -  "acr": "1")
+Зайти в свой realm → Clients → individuals-api → Client scopes → web-origins сделать опциональным (уберёт - "allowed-origins":["/*"])
+Зайти в свой realm → Clients → individuals-api → Client scopes → service_account сделать опциональным (ничего не убрал)
+Оставил только: basic, email, profile, roles
+
+========================================================================================================================
+
+✅ Шаг 16: Настроить 'User registration':
+
+Realm settings -> User registration -> [offline_access и uma_authorization и manage-account и view-profile -> Unassign] (убрать эти роли из токена)
+Оставил только: user
+Это уберёт:
+        "realm_access": {
+          "roles": [
+            "offline_access",
+            "uma_authorization"
+          ]
+        },
+        "resource_access": {
+          "account": {
+            "roles": [
+              "manage-account",
+              "manage-account-links",
+              "view-profile"
+            ]
+          }
+        }
+Оставит только:
+        "realm_access": {
+          "roles": [
+            "default-roles-individuals",
+            "user"
+          ]
+        }
+
+========================================================================================================================
+
+✅ Шаг 17: Создать пользователя и получить токен:
+
+# Создать пользователя
+curl -X POST http://localhost:8080/admin/realms/individuals/users ^
+  -H "Authorization: Bearer $ADMIN_TOKEN" ^
+  -H "Content-Type: application/json" ^
+  -d '{
+    "email": "test@example.com",
+    "username": "test@example.com",
+    "enabled": true,
+    "credentials": [{"type": "password", "value": "password123", "temporary": false}]
+  }'
+
+# Получить токен:
+curl -X POST http://localhost:8080/realms/individuals/protocol/openid-connect/token ^
+  -H "Content-Type: application/x-www-form-urlencoded" ^
+  -d "client_id=individuals-api" ^
+  -d "client_secret=9nekCm9JrhldqeBx5bw00LIzIBRYve6l" ^
+  -d "grant_type=password" ^
+  -d "username=test111@mail.com" ^
+  -d "password=password"
+
+Результат 1 (refresh_expires_in = 1800):
+{
+  "access_token": "eyJhbGciOiJSUzI1NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJhZ1ZEVjJSZHNvOEFnSUFfQ0tydW1XQUdJODA4WUlQLTNRTHJmNGpEUEVNIn0.eyJleHAiOjE3NzExNzAzNjUsImlhdCI6MTc3MTE3MDA2NSwianRpIjoib25ydHJvOjM4NmNlMWQ4LTFkYjktZjM0Mi02Mzc0LTk5N2ExYTIxODRmNCIsImlzcyI6Imh0dHA6Ly9sb2NhbGhvc3Q6ODA4MC9yZWFsbXMvaW5kaXZpZHVhbHMiLCJhdWQiOiJhY2NvdW50Iiwic3ViIjoiYzdjYzJiYjMtOGE2ZS00NWRlLTg4NWYtZjkyOGMxNTY1YWE0IiwidHlwIjoiQmVhcmVyIiwiYXpwIjoiaW5kaXZpZHVhbHMtYXBpIiwic2lkIjoiejVHSmdQMWEzSDdHVkk2cFBGWWFuaHR6IiwiYWNyIjoiMSIsImFsbG93ZWQtb3JpZ2lucyI6WyIvKiJdLCJyZWFsbV9hY2Nlc3MiOnsicm9sZXMiOlsib2ZmbGluZV9hY2Nlc3MiLCJkZWZhdWx0LXJvbGVzLWluZGl2aWR1YWxzIiwidW1hX2F1dGhvcml6YXRpb24iLCJ1c2VyIl19LCJyZXNvdXJjZV9hY2Nlc3MiOnsiYWNjb3VudCI6eyJyb2xlcyI6WyJtYW5hZ2UtYWNjb3VudCIsIm1hbmFnZS1hY2NvdW50LWxpbmtzIiwidmlldy1wcm9maWxlIl19fSwic2NvcGUiOiJwcm9maWxlIGVtYWlsIiwiZW1haWxfdmVyaWZpZWQiOmZhbHNlLCJuYW1lIjoi0JHQvtGC0Y_QvSDQodC10YDQs9C10LkiLCJwcmVmZXJyZWRfdXNlcm5hbWUiOiJ1c2VyIiwiZ2l2ZW5fbmFtZSI6ItCR0L7RgtGP0L0iLCJmYW1pbHlfbmFtZSI6ItCh0LXRgNCz0LXQuSIsImVtYWlsIjoidXNlckBnbWFpbC5jb20ifQ.kIOoa11l74b_zVwZu0rqK-kTfUgnJNysG4wnhT5bOlwSPacDfH0ji3XEBBKxwagfUnnxi16qWVW9uIjMhPJmtI0ujNpGVfO-wKpjYv7LPfFkmH3UpaLypUqn5xtcnPsC1_VL7ckSpENfaQ10V0RagK3-dyFoOXZ7h-qNnxBBKjw9QPvpa5H85je3FmZUlOw_Zwhc1izR3Di4V6Dtll8SNiciNYWzEuOpjjyQ7vD3f5iaHMXvWfQVR0eQ3RrwhXQGeLTwlAQQdyv79uunjaj3N_hur9JJwo9m9tT1ZdpQnJ1xUrFR-BC06F18oK2WGx8AvdqIMIGccN9iVUA6nhFxVg",
+  "expires_in": 300,
+  "refresh_expires_in": 1800,
+  "refresh_token": "eyJhbGciOiJIUzUxMiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICIxYTIzNWFhZi1iZDY1LTQ3YzctYTJhNi1hMmNhZmNjZTliOGMifQ.eyJleHAiOjE3NzExNzE4NjUsImlhdCI6MTc3MTE3MDA2NSwianRpIjoiNGYxMzdjODUtOTc3OS03NDBkLTZhNDktZWJlZTg0NzI3ZTZmIiwiaXNzIjoiaHR0cDovL2xvY2FsaG9zdDo4MDgwL3JlYWxtcy9pbmRpdmlkdWFscyIsImF1ZCI6Imh0dHA6Ly9sb2NhbGhvc3Q6ODA4MC9yZWFsbXMvaW5kaXZpZHVhbHMiLCJzdWIiOiJjN2NjMmJiMy04YTZlLTQ1ZGUtODg1Zi1mOTI4YzE1NjVhYTQiLCJ0eXAiOiJSZWZyZXNoIiwiYXpwIjoiaW5kaXZpZHVhbHMtYXBpIiwic2lkIjoiejVHSmdQMWEzSDdHVkk2cFBGWWFuaHR6Iiwic2NvcGUiOiJhY3IgcHJvZmlsZSBzZXJ2aWNlX2FjY291bnQgcm9sZXMgd2ViLW9yaWdpbnMgZW1haWwgYmFzaWMifQ.uDoiNO8BZ2ykqmtOl3JlgJTuuuGorV_3WcfKl9N20_UpEurw49fbWpjdWHxajLNUdIdTp8G5P6x4zxhNDrU6Zg",
+  "token_type": "Bearer",
+  "not-before-policy": 0,
+  "session_state": "z5GJgP1a3H7GVI6pPFYanhtz",
+  "scope": "profile email"
+}
+Результат 2 (refresh_expires_in = 2592000):
+{
+  "access_token": "eyJhbGciOiJSUzI1NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJhZ1ZEVjJSZHNvOEFnSUFfQ0tydW1XQUdJODA4WUlQLTNRTHJmNGpEUEVNIn0.eyJleHAiOjE3NzExNzM0MzIsImlhdCI6MTc3MTE3MzEzMiwianRpIjoib2ZydHJvOjI5MDk3YzUzLTUxNGMtOTQ5Mi04YjkyLWQ0YmYyM2Y1ZmY4ZiIsImlzcyI6Imh0dHA6Ly9sb2NhbGhvc3Q6ODA4MC9yZWFsbXMvaW5kaXZpZHVhbHMiLCJhdWQiOiJhY2NvdW50Iiwic3ViIjoiYzdjYzJiYjMtOGE2ZS00NWRlLTg4NWYtZjkyOGMxNTY1YWE0IiwidHlwIjoiQmVhcmVyIiwiYXpwIjoiaW5kaXZpZHVhbHMtYXBpIiwic2lkIjoiRUZzX3ZqMEN1Y0VnOHVFdVRWUGU0bXZOIiwiYWNyIjoiMSIsImFsbG93ZWQtb3JpZ2lucyI6WyIvKiJdLCJyZWFsbV9hY2Nlc3MiOnsicm9sZXMiOlsib2ZmbGluZV9hY2Nlc3MiLCJkZWZhdWx0LXJvbGVzLWluZGl2aWR1YWxzIiwidW1hX2F1dGhvcml6YXRpb24iLCJ1c2VyIl19LCJyZXNvdXJjZV9hY2Nlc3MiOnsiYWNjb3VudCI6eyJyb2xlcyI6WyJtYW5hZ2UtYWNjb3VudCIsIm1hbmFnZS1hY2NvdW50LWxpbmtzIiwidmlldy1wcm9maWxlIl19fSwic2NvcGUiOiJwcm9maWxlIG9mZmxpbmVfYWNjZXNzIGVtYWlsIiwiZW1haWxfdmVyaWZpZWQiOmZhbHNlLCJuYW1lIjoi0JHQvtGC0Y_QvSDQodC10YDQs9C10LkiLCJwcmVmZXJyZWRfdXNlcm5hbWUiOiJ1c2VyIiwiZ2l2ZW5fbmFtZSI6ItCR0L7RgtGP0L0iLCJmYW1pbHlfbmFtZSI6ItCh0LXRgNCz0LXQuSIsImVtYWlsIjoidXNlckBnbWFpbC5jb20ifQ.QjBqIBMEQRfu_eXzliJc6sk9NMAtjTFHJROITmeNff-7HHvShgB03ZV4YMyBNuI5QDDir7XjNjybSyS1UMW0yhrt9gKOaST55GbRey0pIMaPfF4KLRqVhkN2JtujAgLIjj1YVd-ic9Fl8mRwgQRBELgsy2AR3HkebiMm2RSjFR--BZFZfWq5BJcmO0WnJHLxqd-pv290O5ps04mkaR0-QEVBKs5NZdQN_Ij-VST9__6CNjpGblwtDcq8LWGxUX7haS_xn0I8HJbk4jcB0B3Ua7wKwQ5b9eS7EYie_nZLkTQYTGIQDzcOOHoUJZCkiBgVqQdUEOG8rjCpNZbFNyY0tw",
+  "expires_in": 300,
+  "refresh_expires_in": 2592000,
+  "refresh_token": "eyJhbGciOiJIUzUxMiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICIxYTIzNWFhZi1iZDY1LTQ3YzctYTJhNi1hMmNhZmNjZTliOGMifQ.eyJleHAiOjE3NzM3NjUxMzIsImlhdCI6MTc3MTE3MzEzMiwianRpIjoiYzJjYWVhMmUtN2ZjYS1kZWUwLWFlYjYtMmRhN2Y1ODQ0MzVlIiwiaXNzIjoiaHR0cDovL2xvY2FsaG9zdDo4MDgwL3JlYWxtcy9pbmRpdmlkdWFscyIsImF1ZCI6Imh0dHA6Ly9sb2NhbGhvc3Q6ODA4MC9yZWFsbXMvaW5kaXZpZHVhbHMiLCJzdWIiOiJjN2NjMmJiMy04YTZlLTQ1ZGUtODg1Zi1mOTI4YzE1NjVhYTQiLCJ0eXAiOiJPZmZsaW5lIiwiYXpwIjoiaW5kaXZpZHVhbHMtYXBpIiwic2lkIjoiRUZzX3ZqMEN1Y0VnOHVFdVRWUGU0bXZOIiwic2NvcGUiOiJhY3IgcHJvZmlsZSBvZmZsaW5lX2FjY2VzcyBzZXJ2aWNlX2FjY291bnQgcm9sZXMgd2ViLW9yaWdpbnMgZW1haWwgYmFzaWMiLCJyZXVzZV9pZCI6ImM2NGUyMDhlLTcwNzEtNDRmMS1iN2ZhLWJhN2RhOTM5ZmRlNCJ9.5If-q2ryNHy5vmjPdp8Wsqs5KuYovTk4QmJtZAshrpM7YiwNgRcLtoWd2U0sz4t4-LnmX2MFtE-__o2sUEorNw",
+  "token_type": "Bearer",
+  "not-before-policy": 0,
+  "session_state": "EFs_vj0CucEg8uEuTVPe4mvN",
+  "scope": "profile offline_access email"
+}
+
+========================================================================================================================
+Расшифровка access_token:
+1) Decoded Header:
+{
+  "alg": "RS256",
+  "typ": "JWT",
+  "kid": "agVDV2Rdso8AgIA_CKrumWAGI808YIP-3QLrf4jDPEM"
+}
+2) Decoded Payload:
+{
+  "exp": 1771173432,
+  "iat": 1771173132,
+  "jti": "ofrtro:29097c53-514c-9492-8b92-d4bf23f5ff8f",
+  "iss": "http://localhost:8080/realms/individuals",
+  "aud": "account",
+  "sub": "c7cc2bb3-8a6e-45de-885f-f928c1565aa4",
+  "typ": "Bearer",
+  "azp": "individuals-api",
+  "sid": "EFs_vj0CucEg8uEuTVPe4mvN",
+  "acr": "1",
+  "allowed-origins": [
+    "/*"
+  ],
+  "realm_access": {
+    "roles": [
+      "offline_access",
+      "default-roles-individuals",
+      "uma_authorization",
+      "user"
+    ]
+  },
+  "resource_access": {
+    "account": {
+      "roles": [
+        "manage-account",
+        "manage-account-links",
+        "view-profile"
+      ]
+    }
+  },
+  "scope": "profile offline_access email",
+  "email_verified": false,
+  "name": "Ботян Сергей",
+  "preferred_username": "user",
+  "given_name": "Ботян",
+  "family_name": "Сергей",
+  "email": "user@gmail.com"
+}
+
+После удаления лишнего из токена:
+{
+  "exp": 1773741162,
+  "iat": 1773740862,
+  "jti": "onrtro:8306be2e-16f3-86c4-80fc-80c9ee31ca35",
+  "iss": "http://localhost:8080/realms/individuals",
+  "sub": "01170678-8ea8-41e3-80ad-341d957235fa",
+  "typ": "Bearer",
+  "azp": "individuals-api",
+  "sid": "BoYMCliWpmfVIByrvKMO3gO_",
+  "realm_access": {
+    "roles": [
+      "default-roles-individuals",
+      "user"
+    ]
+  },
+  "scope": "profile email",
+  "email_verified": true,
+  "preferred_username": "test14@mail.ru",
+  "email": "test14@mail.ru"
+}
+
+========================================================================================================================
+
+✅ Шаг 18: Экспортируйте Realm
+1. Перейдите в Realm settings → Actions → Export
+2. Выберите Export clients and users: OFF (только конфигурацию) Но брал всё!
+3. Нажмите Export
+4. Сохраните JSON как realm-config.json
+
+========================================================================================================================
+
+✅ Шаг 19: Обновите docker-compose.yml
+Теперь вы можете использовать импорт:
+
+keycloak:
+  image: quay.io/keycloak/keycloak:26.5
+  command: start-dev --import-realm
+  volumes:
+    - ./individuals-api/resources/realm-config.json:/opt/keycloak/data/import/realm-config.json
+
+========================================================================================================================
+
+✅ Шаг 20: Проверка через получение access_token
+
+curl -X POST http://localhost:8080/realms/individuals/protocol/openid-connect/token ^
+  -d "client_id=individuals-api" ^
+  -d "client_secret=9nekCm9JrhldqeBx5bw00LIzIBRYve6l" ^
+  -d "grant_type=client_credentials"
+
+{
+  "access_token": "eyJhbGciOiJSUzI1NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJhZ1ZEVjJSZHNvOEFnSUFfQ0tydW1XQUdJODA4WUlQLTNRTHJmNGpEUEVNIn0.eyJleHAiOjE3NzExNzc1NDcsImlhdCI6MTc3MTE3NzI0NywianRpIjoidHJydGNjOmI4YWQ5MDBlLWI4NTMtODA1ZC00ZDBiLTFmMDg5OWRjZjVjYSIsImlzcyI6Imh0dHA6Ly9sb2NhbGhvc3Q6ODA4MC9yZWFsbXMvaW5kaXZpZHVhbHMiLCJhdWQiOiJhY2NvdW50Iiwic3ViIjoiN2ZkZjVkZmYtMTEyZC00YmJkLWJkNDAtY2Y5MGU5ZGJjNzg5IiwidHlwIjoiQmVhcmVyIiwiYXpwIjoiaW5kaXZpZHVhbHMtYXBpIiwiYWNyIjoiMSIsImFsbG93ZWQtb3JpZ2lucyI6WyIvKiJdLCJyZWFsbV9hY2Nlc3MiOnsicm9sZXMiOlsib2ZmbGluZV9hY2Nlc3MiLCJkZWZhdWx0LXJvbGVzLWluZGl2aWR1YWxzIiwidW1hX2F1dGhvcml6YXRpb24iLCJ1c2VyIl19LCJyZXNvdXJjZV9hY2Nlc3MiOnsiYWNjb3VudCI6eyJyb2xlcyI6WyJtYW5hZ2UtYWNjb3VudCIsIm1hbmFnZS1hY2NvdW50LWxpbmtzIiwidmlldy1wcm9maWxlIl19fSwic2NvcGUiOiJwcm9maWxlIG9mZmxpbmVfYWNjZXNzIGVtYWlsIiwiZW1haWxfdmVyaWZpZWQiOmZhbHNlLCJjbGllbnRIb3N0IjoiMTcyLjI0LjAuMSIsInByZWZlcnJlZF91c2VybmFtZSI6InNlcnZpY2UtYWNjb3VudC1pbmRpdmlkdWFscy1hcGkiLCJjbGllbnRBZGRyZXNzIjoiMTcyLjI0LjAuMSIsImNsaWVudF9pZCI6ImluZGl2aWR1YWxzLWFwaSJ9.KMoY8Gc-rDw9Z-lc9xTgevvXIV-DjqMpqfw19e0pi2NNlxJ04VyErwGMwgJeoeKu1U-WX4fABUZsQEfrwlnrGXe_B6Iw2G804uXtKtETFy56535w1p8LrYfZcEDtUBrZZyTXpdjsYsZxWwxKlOb4R2604KXn7Ulq5yOI62xxglzcXR8h1TIGHmOzMd6BCXLSE9l8ZzRsK61rU0lnW8aLliOr84xF8D6bY3OPzFxSLl9u0J1FflD4EmZ4Bf52gMeLW2UOzVAvDnXaRxJXPry7cNdYt_Pp3ji7ijPRiI_S4Itl1HimkcLcVjU5KZOwPBip1kXEPmwx87-eXt7EnQ84Ug",
+  "expires_in": 300,
+  "refresh_expires_in": 0,
+  "token_type": "Bearer",
+  "not-before-policy": 0,
+  "scope": "profile offline_access email"
+}
+
+
+

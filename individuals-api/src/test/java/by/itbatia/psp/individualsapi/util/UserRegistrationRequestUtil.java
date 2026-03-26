@@ -1,6 +1,6 @@
 package by.itbatia.psp.individualsapi.util;
 
-import by.itbatia.individualsapi.dto.UserRegistrationRequest;
+import by.itbatia.psp.individualsapi.dto.UserRegistrationRequest;
 import lombok.experimental.UtilityClass;
 
 /**
