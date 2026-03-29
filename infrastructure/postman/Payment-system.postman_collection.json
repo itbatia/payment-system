@@ -24,12 +24,12 @@
               }
             },
             "url": {
-              "raw": "http://localhost:8081/api/v1/auth/registration",
+              "raw": "http://localhost:8082/api/v1/auth/registration",
               "protocol": "http",
               "host": [
                 "localhost"
               ],
-              "port": "8081",
+              "port": "8082",
               "path": [
                 "api",
                 "v1",
@@ -55,12 +55,12 @@
               }
             },
             "url": {
-              "raw": "http://localhost:8081/api/v1/auth/login",
+              "raw": "http://localhost:8082/api/v1/auth/login",
               "protocol": "http",
               "host": [
                 "localhost"
               ],
-              "port": "8081",
+              "port": "8082",
               "path": [
                 "api",
                 "v1",
@@ -89,12 +89,12 @@
               }
             },
             "url": {
-              "raw": "http://localhost:8081/api/v1/auth/refresh-token",
+              "raw": "http://localhost:8082/api/v1/auth/refresh-token",
               "protocol": "http",
               "host": [
                 "localhost"
               ],
-              "port": "8081",
+              "port": "8082",
               "path": [
                 "api",
                 "v1",
@@ -121,12 +121,12 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "http://localhost:8081/api/v1/auth/me",
+              "raw": "http://localhost:8082/api/v1/auth/me",
               "protocol": "http",
               "host": [
                 "localhost"
               ],
-              "port": "8081",
+              "port": "8082",
               "path": [
                 "api",
                 "v1",
@@ -192,12 +192,12 @@
               }
             },
             "url": {
-              "raw": "http://localhost:8081/actuator/prometheus",
+              "raw": "http://localhost:8082/actuator/prometheus",
               "protocol": "http",
               "host": [
                 "localhost"
               ],
-              "port": "8081",
+              "port": "8082",
               "path": [
                 "actuator",
                 "prometheus"
@@ -256,12 +256,12 @@
               }
             },
             "url": {
-              "raw": "http://localhost:8081/actuator/health",
+              "raw": "http://localhost:8082/actuator/health",
               "protocol": "http",
               "host": [
                 "localhost"
               ],
-              "port": "8081",
+              "port": "8082",
               "path": [
                 "actuator",
                 "health"

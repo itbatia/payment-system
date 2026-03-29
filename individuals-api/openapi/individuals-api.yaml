@@ -4,7 +4,7 @@ info:
   description: REST API для регистрации, логина, обновления токена и получения информации о пользователе через Keycloak.
   version: 1.0.0
 servers:
-  - url: http://localhost:8081/api/v1
+  - url: http://localhost:8082/api/v1
 
 paths:
   /auth/registration:

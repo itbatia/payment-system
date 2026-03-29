@@ -1,0 +1,33 @@
+# 1. Генерация DTO и API-интерфейсов
+./gradlew clean :individuals-api:openApiGenerate :person-service:openApiGenerateAll
+
+# 2. Публикация common в Nexus
+./gradlew :common:publish
+
+# 3. Сборка JAR-ов
+./gradlew :individuals-api:bootJar :person-service:bootJar
+
+
+
+
+
+
+
+
+
+1)
+./gradlew clean :individuals-api:build :person-service:build
+Под капотом:
+> Task :individuals-api:openApiGenerate
+> Task :individuals-api:compileJava
+> Task :person-service:generateCommonDto
+> Task :person-service:deleteOpenApiMeta
+> Task :person-service:deleteGeneratedEmptyDirs
+> Task :person-service:generatePersonServiceApi
+2)
+./gradlew :common:publish
+3)
+docker-compose up -d
+
+
+
