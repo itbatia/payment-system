@@ -21,7 +21,7 @@ java {
 
 group = "by.itbatia.psp"
 version = "1.0.0"
-description = "Authentication orchestrator"
+description = "User management microservice"
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //////                                         Конфигурации зависимостей                                          //////
@@ -35,6 +35,16 @@ configurations {
 
 repositories {
     mavenCentral()
+    maven {
+        url = uri("http://localhost:8081/repository/maven-public/")
+        credentials {
+            username = "admin"
+            password = "admin-password"
+        }
+        withGroovyBuilder {
+            setProperty("allowInsecureProtocol", true)
+        }
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -43,17 +53,24 @@ repositories {
 
 dependencies {
 
-    // Spring
-    implementation("org.springframework.boot:spring-boot-starter-webflux")
-    implementation("org.springframework.boot:spring-boot-starter-security")
-    implementation("org.springframework.boot:spring-boot-starter-oauth2-resource-server")
+    // Spring web
+    implementation("org.springframework.boot:spring-boot-starter-web")
 
     // Openapi
-    implementation("org.springdoc:springdoc-openapi-starter-webflux-ui:${project.property("springdocOpenapiStarterWebfluxUiVersion")}")
+    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:${project.property("springdocOpenapiStarterWebmvcUiVersion")}")
 
-    // Metrics
+    // DB stack:
+    // JPA + PostgreSQL + Flyway + Hibernate Envers (аудит)
+    implementation("org.springframework.boot:spring-boot-starter-data-jpa")
+    runtimeOnly("org.postgresql:postgresql")
+    implementation("org.flywaydb:flyway-core")
+//    implementation("org.hibernate.com:hibernate-envers")
+
+    // Observer stack:
+    // Metrics + OpenTelemetry (трассировка)
     implementation("org.springframework.boot:spring-boot-starter-actuator")
     runtimeOnly("io.micrometer:micrometer-registry-prometheus:${project.property("micrometerRegistryPrometheusVersion")}")
+    implementation("io.opentelemetry.instrumentation:opentelemetry-spring-boot-starter:${project.property("opentelemetrySpringBootStarterVersion")}")
 
     // Lombok
     compileOnly("org.projectlombok:lombok:${project.property("lombokVersion")}")
@@ -63,13 +80,15 @@ dependencies {
     implementation("net.logstash.logback:logstash-logback-encoder:${project.property("logstashLogbackEncoderVersion")}")
 
     // Tests
-    testImplementation("org.springframework.boot:spring-boot-starter-webflux-test")
+    testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("org.springframework.boot:spring-boot-testcontainers")
-    testImplementation("org.testcontainers:testcontainers-junit-jupiter")
-    testImplementation("com.github.dasniko:testcontainers-keycloak:${project.property("testcontainersKeycloakVersion")}")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 
     testCompileOnly("org.projectlombok:lombok:${project.property("lombokVersion")}")
     testAnnotationProcessor("org.projectlombok:lombok:${project.property("lombokVersion")}")
+
+    // implementation(project(":common")) // local
+    implementation("by.itbatia.psp:common:${project.property("commonVersion")}") // из Nexus
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -91,40 +110,63 @@ tasks.named("processResources") {
 //////                                          Генерация DTO из OpenAPI                                          //////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-openApiGenerate {
+tasks.register<org.openapitools.generator.gradle.plugin.tasks.GenerateTask>("generateCommonDto") {
     generatorName.set("spring")
-    inputSpec.set("$rootDir/individuals-api/openapi/individuals-api.yaml")
-    outputDir.set(layout.buildDirectory.dir("generated-sources/openapi").get().asFile.absolutePath)
-    modelPackage.set("by.itbatia.psp.individualsapi.dto")
-    apiPackage.set("by.itbatia.psp.individualsapi.api")
+    inputSpec.set("$rootDir/person-service/openapi/person-service-api.yaml")
+    outputDir.set("$rootDir/common")
+    modelPackage.set("by.itbatia.psp.common.dto")
 
     globalProperties.set(
         mapOf(
-            "models" to "",                         // ← включить генерацию DTO (""=all)
-            "apis" to "",                           // ← включить генерацию API (""=all)
-            "supportingFiles" to "false"            // ← не включить генерацию Utils (-ApiUtil)
+            "models" to "",                          // ← включить генерацию DTO (""=all)
+            "supportingFiles" to "false"             // ← не включить генерацию Utils (-ApiUtil)
         )
     )
 
-    configOptions.set(                              // ← docs - https://openapi-generator.tech/docs/generators/spring/
+    configOptions.set(                               // ← docs - https://openapi-generator.tech/docs/generators/spring/
         mapOf(
-            "useJakartaEe" to "true",               // ← использует jakarta.* вместо javax.* (требуется для Spring Boot 4)
-            "useSpringBoot4" to "true",             // ← сгенерировать код и предоставить зависимости для использования со Spring Boot 4.x (+ включает Jakarta EE)
-            "openApiNullable" to "false",           // ← не генерировать аннотации @Nullable/@NonNull
+            "useJakartaEe" to "true",                // ← использует jakarta.* вместо javax.* (требуется для Spring Boot 4)
+            "useSpringBoot4" to "true",              // ← сгенерировать код и предоставить зависимости для использования со Spring Boot 4.x (+ включает Jakarta EE)
+            "openApiNullable" to "false",            // ← не генерировать аннотации @Nullable/@NonNull
+            "modelTests" to "false",                 // ← отключает генерацию тестов для моделей
 
-            "interfaceOnly" to "true",              // ← только интерфейсы, без реализации (не генерирует: class AuthApiController implements AuthApi)
-            "skipDefaultInterface" to "true",       // ← не генерировать default-реализацию интерфейсов (только сигнатура метода, без тела)
+            "additionalModelTypeAnnotations" to """
+                @lombok.Data
+                @lombok.Builder
+                @lombok.NoArgsConstructor
+                @lombok.AllArgsConstructor
+            """.trimIndent(),
 
-            "reactive" to "true",                   // ← использовать Mono/Flux в возвращаемом значении (!!! Но и RequestBody заворачивает тоже)
-            "includeHttpRequestContext" to "false", // ← не включать ServerWebExchange в качестве доп параметра в генерируемые методы
-
-            "useBeanValidation" to "false",         // ← Use BeanValidation API annotations (отключает @Validated на классе и @Valid на параметрах)
-            "performBeanValidation" to "false",     // ← Use Bean Validation Impl. to perform BeanValidation (опционально)
-            "useSpringBuiltInValidation" to "false" // ← Disable @Validated at the class level when using built-in validation. (опционально)
+            "useBeanValidation" to "false"          // ← Use BeanValidation API annotations (отключает @Validated на классе и @Valid на параметрах)
         )
     )
 }
 
+tasks.register<org.openapitools.generator.gradle.plugin.tasks.GenerateTask>("generatePersonServiceApi") {
+    generatorName.set("spring")
+    inputSpec.set("$rootDir/person-service/openapi/person-service-api.yaml")
+    outputDir.set(layout.buildDirectory.dir("generated-sources/openapi").get().asFile.absolutePath)
+    apiPackage.set("by.itbatia.psp.personservice.api")
+    modelPackage.set("by.itbatia.psp.common.dto")
+
+    globalProperties.set(                           // ← docs - https://openapi-generator.tech/docs/generators/spring/
+        mapOf(
+            "apis" to ""
+        )
+    )
+    configOptions.set(
+        mapOf(
+            "useJakartaEe" to "true",               // ← использует jakarta.* вместо javax.* (требуется для Spring Boot 4)
+            "useSpringBoot4" to "true",             // ← сгенерировать код и предоставить зависимости для использования со Spring Boot 4.x (+ включает Jakarta EE)
+            "interfaceOnly" to "true",              // ← только интерфейсы, без реализации (не генерирует: class AuthApiController implements AuthApi)
+            "skipDefaultInterface" to "true",       // ← не генерировать default-реализацию интерфейсов (только сигнатура метода, без тела)
+            "includeHttpRequestContext" to "false", // ← не включать HttpServletRequest в качестве доп параметра в генерируемые методы
+            "useBeanValidation" to "false"          // ← Use BeanValidation API annotations (отключает @Validated на классе и @Valid на параметрах)
+        )
+    )
+}
+
+// Подключаем сгенерированные интерфейсы API к исходникам
 sourceSets {
     main {
         java {
@@ -133,33 +175,65 @@ sourceSets {
     }
 }
 
+tasks.register("openApiGenerateAll") {
+    dependsOn("generateCommonDto", "generatePersonServiceApi")
+}
+
 tasks.named("compileJava") {
-    dependsOn(tasks.named("openApiGenerate"))
+    dependsOn("openApiGenerateAll")
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//////                                    Очистка пустых артефактов генерации                                     //////
+//////                              Очистка ненужных или пустых артефактов генерации                              //////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+tasks.register("deleteOpenApiMeta") {
+    doLast {
+        val metaDir = file("$rootDir/common/.openapi-generator")
+        if (metaDir.exists()) {
+            metaDir.deleteRecursively()
+            println("Deleted .openapi-generator metadata folder")
+        }
+    }
+}
 
 tasks.register("deleteGeneratedEmptyDirs") {
     doLast {
-        val genDir = layout.buildDirectory.dir("generated-sources/openapi/src/main/java").get().asFile
+        val srcMainJava = file("$rootDir/common/src/main/java")
+        val srcMainResources = file("$rootDir/common/src/main/resources")
+        val testDir = file("$rootDir/common/src/test")
+
+        // Delete src/main/java/org/:
         listOf(
             "org/openapitools/api",
             "org/openapitools/configuration",
             "org/openapitools",
             "org"
-        ).forEach { directory ->
-            val dir = File(genDir, directory)
-            if (dir.exists() && dir.list()?.isEmpty() == true) {
+        ).forEach { pkg ->
+            val dir = File(srcMainJava, pkg)
+            if (dir.exists()) {
                 dir.deleteRecursively()
+                println("Deleted junk package: $pkg")
             }
+        }
+
+        // Delete src/test/:
+        if (testDir.exists()) {
+            testDir.deleteRecursively()
+            println("Deleted empty test/java directory")
+        }
+
+        // Delete resources:
+        if (srcMainResources.exists() && srcMainResources.list()?.isEmpty() == true) {
+            srcMainResources.deleteRecursively()
+            println("Deleted empty resources folder")
         }
     }
 }
 
-tasks.named("openApiGenerate") {
-    finalizedBy(tasks.named("deleteGeneratedEmptyDirs"))
+tasks.named("generateCommonDto") {
+    finalizedBy("deleteOpenApiMeta")
+    finalizedBy("deleteGeneratedEmptyDirs")
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -167,7 +241,7 @@ tasks.named("openApiGenerate") {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 tasks.named<org.springframework.boot.gradle.tasks.bundling.BootJar>("bootJar") {
-    archiveFileName.set("individuals-api.jar")
+    archiveFileName.set("person-service.jar")
     layered {
         enabled = true
     }

@@ -37,7 +37,7 @@ docker-compose up -d
 
 Задействованные порты:
 
-- `8081` — individuals-api
+- `8082` — individuals-api
 - `8080` — keycloak
 - `5433` — postgres
 - `9090` — prometheus
@@ -59,7 +59,7 @@ _Все сервисы должны быть в состоянии Up.
 
 | Компонент  | URL                                         | Описание                         |
 |:-----------|:--------------------------------------------|:---------------------------------|
-| Swagger UI | http://localhost:8081/swagger-ui/index.html | Интерактивная документация API   |
+| Swagger UI | http://localhost:8082/swagger-ui/index.html | Интерактивная документация API   |
 | Grafana    | http://localhost:3000                       | Логин: `admin` / Пароль: `admin` |
 | Keycloak   | http://localhost:8080                       | Логин: `admin` / Пароль: `admin` |
 
@@ -143,11 +143,19 @@ _Все сервисы должны быть в состоянии Up.
 │   └── developer/          # Заметки разработчика
 │
 ├── individuals-api/        # Исходный код сервиса
-│   ├── openapi/            # OpenAPI спецификация (YAML)
+│   ├── openapi/            # OpenAPI спецификация (YAML) - внешний API
 │   ├── resources/          # Импортируемый realm-config.json для Keycloak
 │   ├── src/main/java/      # Код контроллеров, сервисов, DTO
 │   ├── build.gradle.kts    # Настройка модуля
 │   └── Dockerfile          # Инструкции для сборки Docker-образа
+│
+├── person-service/         # Исходный код сервиса
+│   ├── openapi/            # OpenAPI спецификация (YAML) - внутренний API
+│   ├── src/main/java/      # Код контроллеров, сервисов, репозиториев
+│   ├── build.gradle.kts    # Настройка модуля
+│   └── Dockerfile          # Инструкции для сборки Docker-образа
+│
+├── common/                 # Только сгенерированные DTO
 │
 ├── docker-compose.yml      # Основной compose-файл
 ├── gradle.properties       # Управление версионностью проекта
@@ -176,8 +184,8 @@ _Все сервисы должны быть в состоянии Up.
 
 Откройте в браузере на запущенном приложении
 
-- Swagger UI: http://localhost:8081/swagger-ui/index.html
-- OpenAPI JSON: http://localhost:8081/v3/api-docs
+- Swagger UI: http://localhost:8082/swagger-ui/index.html
+- OpenAPI JSON: http://localhost:8082/v3/api-docs
 
 > 💡 Используйте `Local server` для тестирования API и выполнения запросов.
 
@@ -354,7 +362,17 @@ logging:
 `./gradlew clean :individuals-api:bootJar`
 
 ✅ Пересобрать Java-код на основе OpenAPI-спецификации (блок openApiGenerate):  
-`./gradlew clean :individuals-api:openApiGenerate`
+`./gradlew :individuals-api:clean :individuals-api:openApiGenerate`  
+`./gradlew :person-service:clean :person-service:openApiGenerateAll`
+
+✅ Выведет полное дерево зависимостей с указанием фактических версий, выбранных Spring Boot BOM:  
+`./gradlew :person-service:dependencies --configuration runtimeClasspath`
+
+✅ Отправить артефакт в Nexus:  
+`./gradlew :common:publish`
+
+✅ Очистить кэш Gradle:  
+`./gradlew --refresh-dependencies`
 
 🔧 **Docker commands**
 
@@ -369,3 +387,7 @@ logging:
 
 ✅ Посмотреть список и текущее состояние (статус) контейнеров:  
 `docker-compose ps`
+
+🔧 **Useful links**
+
+[spring-boot-dependencies-4.0.5.pom](https://repo1.maven.org/maven2/org/springframework/boot/spring-boot-dependencies/4.0.5/spring-boot-dependencies-4.0.5.pom)

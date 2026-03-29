@@ -16,7 +16,7 @@ scrape_configs:
   - job_name: 'individuals-api'
     metrics_path: '/actuator/prometheus'      # URL for collecting metrics
     static_configs:
-      - targets: ['individuals-api:8081']     # docker-compose: service name (de facto: docker DNS -> container IP)
+      - targets: ['individuals-api:8082']     # docker-compose: service name (de facto: docker DNS -> container IP)
         labels:
           app: 'individuals-api'
           env: 'docker'

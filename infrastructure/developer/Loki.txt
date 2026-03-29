@@ -107,7 +107,7 @@ ID             NAME          DESCRIPTION           ENABLED
               },
               "NetworkMode": "payment-system_default",
               "PortBindings": {
-                  "8081/tcp": [
+                  "8082/tcp": [
                       {
 ========================================================================================================================
 Home -> Explore -> выбрать {app="individuals-api"}

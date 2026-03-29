@@ -47,7 +47,7 @@ RUN echo "=== Remove unnecessary JARs ===" && \
 
 USER pspuser
 
-EXPOSE 8081
+EXPOSE 8082
 
 ENTRYPOINT ["java", "-Dspring.profiles.active=docker", "org.springframework.boot.loader.launch.JarLauncher"]
 
@@ -103,7 +103,7 @@ FROM amazoncorretto:25
 yum install -y --allowerasing curl shadow-utils findutils
 ========================================================================================================================
 Устанавливает необходимые утилиты:
-curl — для healthcheck в docker-compose.yml -> individuals-api (["CMD", "curl", "-f", "http://localhost:8081/actuator/health"]),
+curl — для healthcheck в docker-compose.yml -> individuals-api (["CMD", "curl", "-f", "http://localhost:8082/actuator/health"]),
        curl обязан быть внутри контейнера, иначе healthcheck будет падать.
 shadow-utils — содержит useradd, groupadd (управление пользователями), нужен для RUN groupadd и RUN useradd
 findutils — содержит команду find (для удаления ненужных JAR-файлов -> RUN find BOOT-INF/lib/ ...)
@@ -172,9 +172,9 @@ USER pspuser
 
 
 ========================================================================================================================
-EXPOSE 8081
+EXPOSE 8082
 ========================================================================================================================
-→ Документирует, что контейнер слушает порт 8081 (не открывает его, только метаданные).
+→ Документирует, что контейнер слушает порт 8082 (не открывает его, только метаданные).
 
 
 ========================================================================================================================
@@ -190,9 +190,9 @@ USER pspuser
 
 
 ========================================================================================================================
-EXPOSE 8081
+EXPOSE 8082
 ========================================================================================================================
-> **Документирует**, что приложение слушает порт `8081`.
+> **Документирует**, что приложение слушает порт `8082`.
 > На самом деле, Docker Compose сам пробрасывает порты, но это хорошая практика.
 
 
@@ -312,7 +312,7 @@ RUN groupadd -g 1001 pspuser && \
 
 USER pspuser
 
-EXPOSE 8081
+EXPOSE 8082
 
 ENTRYPOINT ["java", "-Dspring.profiles.active=docker", "org.springframework.boot.loader.launch.JarLauncher"]
 
@@ -333,6 +333,6 @@ RUN yum install -y --allowerasing curl shadow-utils && \
 
 USER pspuser
 
-EXPOSE 8081
+EXPOSE 8082
 
 ENTRYPOINT ["java", "-Dspring.profiles.active=docker", "-jar", "app.jar"]

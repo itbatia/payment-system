@@ -44,9 +44,9 @@ services:
       dockerfile: individuals-api/Dockerfile
     container_name: individuals-api
     ports:
-      - "8081:8081"
+      - "8082:8082"
     environment:
-      SERVER_PORT: 8081
+      SERVER_PORT: 8082
       LOG_LEVEL_TOKEN_SERVICE: DEBUG                      # DEBUG/INFO -> with/without: (log example) 'User with [username=test@mail.ru] has logged in'.
       KC_REALM: individuals                               # Name of the Keycloak realm used for authentication and user management.
       KC_BASE_URL: http://keycloak:8080                   # Base URL of the Keycloak server.
@@ -63,7 +63,7 @@ services:
       loki:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8081/actuator/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:8082/actuator/health"]
       interval: 10s
       timeout: 5s
       retries: 5
