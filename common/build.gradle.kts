@@ -74,4 +74,5 @@ dependencies {
     implementation("org.springframework:spring-core:${project.property("springVersion")}")
     implementation("com.google.code.findbugs:jsr305:${project.property("jsr305Version")}")
     implementation("org.springframework:spring-context:${project.property("springVersion")}")
+    implementation("org.springframework.boot:spring-boot-starter-validation:${project.property("springBootVersion")}")
 }

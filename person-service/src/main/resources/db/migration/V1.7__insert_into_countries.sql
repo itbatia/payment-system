@@ -1,0 +1,16 @@
+INSERT INTO person.countries (name, alpha2, alpha3, status)
+VALUES ('Беларусь', 'BY', 'BLR', 'ACTIVE'),
+       ('Россия', 'RU', 'RUS', 'ACTIVE'),
+       ('Украина', 'UA', 'UKR', 'ACTIVE'),
+       ('Азербайджан', 'AZ', 'AZE', 'ACTIVE'),
+       ('Армения', 'AM', 'ARM', 'ACTIVE'),
+       ('Китай', 'CN', 'CHN', 'ACTIVE'),
+       ('Франция', 'FR', 'FRA', 'ACTIVE'),
+       ('Италия', 'IT', 'ITA', 'ACTIVE'),
+       ('Казахстан', 'KZ', 'KAZ', 'ACTIVE'),
+       ('Польша', 'PL', 'POL', 'ACTIVE'),
+       ('Испания', 'ES', 'ESP', 'ACTIVE'),
+       ('Швеция', 'SE', 'SWE', 'ACTIVE'),
+       ('Турция', 'TR', 'TUR', 'ACTIVE'),
+       ('Египет', 'EG', 'EGY', 'ACTIVE'),
+       ('Соединенные Штаты', 'US', 'USA', 'ACTIVE');

@@ -1,0 +1,67 @@
+                                            *************************
+                                            *****   Hibernate   *****
+                                            *************************
+
+========================================================================================================================
+CountryEntity:
+
+@OneToMany(mappedBy = "country", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+private List<AddressEntity> addresses = new ArrayList<>();
+
+mappedBy = "country" — (обратная сторона) значит, владельцем связи является AddressEntity (там есть @ManyToOne private CountryEntity country),
+cascade = CascadeType.ALL — при сохранении/удалении страны будут обработаны и AddressEntity (осторожно с REMOVE!),
+fetch = FetchType.LAZY — адреса не загружаются автоматически при загрузке страны → избегаем N+1 и перегрузки.
+
+Владелец связи — та сторона, где есть внешний ключ (@JoinColumn)!
+
+========================================================================================================================
+AddressEntity:
+
+@ManyToOne(fetch = FetchType.LAZY)
+@JoinColumn(name = "country_id", nullable = false)
+private CountryEntity country;
+
+@OneToOne(mappedBy = "address", fetch = FetchType.LAZY)
+private UserEntity user;
+
+fetch = FetchType.LAZY:
+      Хотя «один к одному» часто делают EAGER, на практике это опасно:
+    - Может привести к ненужной загрузке (например, вы работаете с адресом, а вам не нужен пользователь),
+    - Может вызвать циклическую загрузку (адрес → пользователь → индивидуал → ...),
+    - В Spring Data REST или Jackson может вызвать StackOverflow при сериализации.
+      ✅ LAZY — безопаснее по умолчанию. Если в каком-то сервисе нужен пользователь — use JOIN FETCH в JPQL или EntityGraph.
+💡 Примечание:
+для @OneToOne Hibernate по умолчанию использует EAGER, даже если вы написали LAZY — это особенность реализации.
+Чтобы обойти — можно использовать @JoinColumn на обеих сторонах или @LazyToOne.
+
+CountryEntity country — владелец связи (есть @JoinColumn)
+
+========================================================================================================================
+🔹 nullable = false
+Генерирует DDL с NOT NULL (если вы используете ddl-auto: create или update), Но не влияет на поведение приложения во время выполнения.
+🔹 updatable = false
+Запрещает изменение значения этого поля при UPDATE.
+Например, если вы измените id у загруженной сущности и вызовете save(), Hibernate проигнорирует новое значение и не
+включит его в SQL-запрос UPDATE. ✅ Для @Id это всегда правильно — первичный ключ не должен меняться.
+🔹 unique = true
+(Напр) один адрес → один пользователь. Но это не создаёт ограничение в БД автоматически (если не использовать ddl-auto: create или update).
+При использовании Flyway/Liquibase сами добавляем UNIQUE в миграцию
+
+========================================================================================================================
+Как загружать связанные сущности при FetchType.LAZY:
+
+Вариант A: JOIN FETCH в JPQL:
+@Query("SELECT c FROM CountryEntity c JOIN FETCH c.addresses WHERE c.id = :id")
+Optional<CountryEntity> findCountryWithAddresses(@Param("id") Long id);
+
+Вариант B: EntityGraph:
+@EntityGraph(attributePaths = "addresses")
+Optional<CountryEntity> findById(Long id);
+
+Вариант C: Просто обратиться к коллекции внутри транзакции
+CountryEntity country = countryRepository.findById(1L).orElseThrow();
+List<AddressEntity> addresses = country.getAddresses(); // ← lazy-загрузка сработает
+⚠️ Но если вы обратитесь к addresses вне транзакции — получите LazyInitializationException.
+
+========================================================================================================================
+

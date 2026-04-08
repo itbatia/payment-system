@@ -56,6 +56,9 @@ dependencies {
     // Spring web
     implementation("org.springframework.boot:spring-boot-starter-web")
 
+    // Spring validation
+    implementation("org.springframework.boot:spring-boot-starter-validation")
+
     // Openapi
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:${project.property("springdocOpenapiStarterWebmvcUiVersion")}")
 
@@ -63,18 +66,23 @@ dependencies {
     // JPA + PostgreSQL + Flyway + Hibernate Envers (аудит)
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     runtimeOnly("org.postgresql:postgresql")
-    implementation("org.flywaydb:flyway-core")
+    implementation("org.springframework.boot:spring-boot-starter-flyway")
+    runtimeOnly ("org.flywaydb:flyway-database-postgresql")
 //    implementation("org.hibernate.com:hibernate-envers")
 
     // Observer stack:
     // Metrics + OpenTelemetry (трассировка)
     implementation("org.springframework.boot:spring-boot-starter-actuator")
     runtimeOnly("io.micrometer:micrometer-registry-prometheus:${project.property("micrometerRegistryPrometheusVersion")}")
-    implementation("io.opentelemetry.instrumentation:opentelemetry-spring-boot-starter:${project.property("opentelemetrySpringBootStarterVersion")}")
+//    implementation("io.opentelemetry.instrumentation:opentelemetry-spring-boot-starter:${project.property("opentelemetrySpringBootStarterVersion")}")
+//    implementation ("io.github.openfeign:feign-micrometer:${project.property("feignMicrometerVersion")}")
 
-    // Lombok
+    // Lombok + Mapstruct
     compileOnly("org.projectlombok:lombok:${project.property("lombokVersion")}")
     annotationProcessor("org.projectlombok:lombok:${project.property("lombokVersion")}")
+    implementation("org.mapstruct:mapstruct:${project.property("mapstructVersion")}")
+    annotationProcessor("org.mapstruct:mapstruct-processor:${project.property("mapstructVersion")}")
+    annotationProcessor("org.projectlombok:lombok-mapstruct-binding:${project.property("lombokMapstructBindingVersion")}")
 
     // Logback
     implementation("net.logstash.logback:logstash-logback-encoder:${project.property("logstashLogbackEncoderVersion")}")
@@ -87,8 +95,8 @@ dependencies {
     testCompileOnly("org.projectlombok:lombok:${project.property("lombokVersion")}")
     testAnnotationProcessor("org.projectlombok:lombok:${project.property("lombokVersion")}")
 
-    // implementation(project(":common")) // local
-    implementation("by.itbatia.psp:common:${project.property("commonVersion")}") // из Nexus
+     implementation(project(":common")) // from local
+//    implementation("by.itbatia.psp:common:${project.property("commonVersion")}") // from Nexus
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -114,7 +122,7 @@ tasks.register<org.openapitools.generator.gradle.plugin.tasks.GenerateTask>("gen
     generatorName.set("spring")
     inputSpec.set("$rootDir/person-service/openapi/person-service-api.yaml")
     outputDir.set("$rootDir/common")
-    modelPackage.set("by.itbatia.psp.common.dto")
+    modelPackage.set("by.itbatia.psp.common.dto.internal")
 
     globalProperties.set(
         mapOf(
@@ -132,12 +140,10 @@ tasks.register<org.openapitools.generator.gradle.plugin.tasks.GenerateTask>("gen
 
             "additionalModelTypeAnnotations" to """
                 @lombok.Data
-                @lombok.Builder
-                @lombok.NoArgsConstructor
-                @lombok.AllArgsConstructor
             """.trimIndent(),
 
-            "useBeanValidation" to "false"          // ← Use BeanValidation API annotations (отключает @Validated на классе и @Valid на параметрах)
+            "useBeanValidation" to "true",            // ← Use BeanValidation API annotations (добавляет @Validated на классе и @Valid на параметрах)
+            "performBeanValidation" to "true"         // ← Добавляет @NotNull, @Size(min = ..., max = ...), @Pattern, @Email, @Min, @Max и т.д.
         )
     )
 }
@@ -147,21 +153,21 @@ tasks.register<org.openapitools.generator.gradle.plugin.tasks.GenerateTask>("gen
     inputSpec.set("$rootDir/person-service/openapi/person-service-api.yaml")
     outputDir.set(layout.buildDirectory.dir("generated-sources/openapi").get().asFile.absolutePath)
     apiPackage.set("by.itbatia.psp.personservice.api")
-    modelPackage.set("by.itbatia.psp.common.dto")
+    modelPackage.set("by.itbatia.psp.common.dto.internal")
 
-    globalProperties.set(                           // ← docs - https://openapi-generator.tech/docs/generators/spring/
+    globalProperties.set(                            // ← docs - https://openapi-generator.tech/docs/generators/spring/
         mapOf(
             "apis" to ""
         )
     )
     configOptions.set(
         mapOf(
-            "useJakartaEe" to "true",               // ← использует jakarta.* вместо javax.* (требуется для Spring Boot 4)
-            "useSpringBoot4" to "true",             // ← сгенерировать код и предоставить зависимости для использования со Spring Boot 4.x (+ включает Jakarta EE)
-            "interfaceOnly" to "true",              // ← только интерфейсы, без реализации (не генерирует: class AuthApiController implements AuthApi)
-            "skipDefaultInterface" to "true",       // ← не генерировать default-реализацию интерфейсов (только сигнатура метода, без тела)
-            "includeHttpRequestContext" to "false", // ← не включать HttpServletRequest в качестве доп параметра в генерируемые методы
-            "useBeanValidation" to "false"          // ← Use BeanValidation API annotations (отключает @Validated на классе и @Valid на параметрах)
+            "useJakartaEe" to "true",                // ← использует jakarta.* вместо javax.* (требуется для Spring Boot 4)
+            "useSpringBoot4" to "true",              // ← сгенерировать код и предоставить зависимости для использования со Spring Boot 4.x (+ включает Jakarta EE)
+            "interfaceOnly" to "true",               // ← только интерфейсы, без реализации (не генерирует: class AuthApiController implements AuthApi)
+            "skipDefaultInterface" to "true",        // ← не генерировать default-реализацию интерфейсов (только сигнатура метода, без тела)
+            "includeHttpRequestContext" to "false",  // ← не включать HttpServletRequest в качестве доп параметра в генерируемые методы
+            "useBeanValidation" to "true"            // ← Use BeanValidation API annotations (отключает @Validated на классе и @Valid на параметрах)
         )
     )
 }

@@ -9,3 +9,32 @@ info:
     name: ${project.name}
     version: ${project.version}
     description: ${project.description}
+
+# ==================================================================================================================== #
+# SPRING config                                                                                                        #
+# ==================================================================================================================== #
+spring:
+  datasource:
+    username: postgres
+    password: postgres
+    url: jdbc:postgresql://localhost:5432/psp
+  jpa:
+    show-sql: true                                        # Enable SQL logging.
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect  # Optional.
+        format_sql: true                                  # Beautiful SQL formatting in logs.
+      jdbc:
+        time_zone: Europe/Minsk                           # Set up a time zone.
+  flyway:
+    enabled: true                                         # Enable migrations (by default true).
+    url: jdbc:postgresql://localhost:5432/psp
+    user: postgres
+    password: postgres
+    locations: classpath:db/migration
+
+#management:
+#  otlp:
+#    metrics:
+#      export:
+#        enabled: false
