@@ -1,8 +1,8 @@
 package by.itbatia.psp.personservice.mapper;
 
-import by.itbatia.psp.common.dto.internal.AddressCreateRequest;
-import by.itbatia.psp.common.dto.internal.AddressResponse;
-import by.itbatia.psp.common.dto.internal.AddressUpdateRequest;
+import by.itbatia.psp.common.dto.AddressCreateRequest;
+import by.itbatia.psp.common.dto.AddressResponse;
+import by.itbatia.psp.common.dto.AddressUpdateRequest;
 import by.itbatia.psp.personservice.entity.AddressEntity;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;

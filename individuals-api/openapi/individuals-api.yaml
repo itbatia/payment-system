@@ -3,8 +3,18 @@ info:
   title: Individuals API
   description: REST API для регистрации, логина, обновления токена и получения информации о пользователе через Keycloak.
   version: 1.0.0
+
 servers:
   - url: http://localhost:8082/api/v1
+    description: Local development server
+
+tags:
+  - name: Authentication
+    description: REST API for user registration and authentication
+
+########################################################################################################################
+###########################                             Auth Api                             ###########################
+########################################################################################################################
 
 paths:
   /auth/registration:
@@ -21,75 +31,16 @@ paths:
       tags:
         - Authentication
       requestBody:
-        description: User registration details
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/UserRegistrationRequest'
-            examples:
-              exampleOfCreatingUser:
-                summary: Example of creating a user
-                description: |
-                  **Field requirements:**
-                  - `email`: valid email format (e.g., user@example.com)
-                  - `password`: at least 8 characters, including uppercase, lowercase, and digits
-                  - `confirm_password`: must exactly match `password`
-                value:
-                  email: "example@qmail.com"
-                  password: "SecurePass123!"
-                  confirm_password: "SecurePass123!"
+        $ref: '../../person-service/openapi/person-service-api.yaml#/components/requestBodies/IndividualCreateRequestBody'
       responses:
         '201':
-          description: User created successfully. Returns tokens.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/TokenResponse'
-              examples:
-                Successful Response:
-                  summary: Example of a response
-                  value:
-                    access_token: "eyJhbGciOiJSUzI1NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJ...<truncated>"
-                    refresh_token: "eyJhbGciOiJIUzUxMiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICI...<truncated>"
-                    expires_in: 300
-                    token_type: "Bearer"
+          $ref: '#/components/responses/RegistrationResponse201'
         '400':
-          description: Bad request. Validation failed
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-              examples:
-                ErrorResponse:
-                  summary: Example of a response
-                  value:
-                    error: "Password and confirmation don't match"
-                    status: 400
+          $ref: '#/components/responses/Response400'
         '403':
-          description: Forbidden. Server misconfiguration (contact admin).
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-              examples:
-                ErrorResponse:
-                  summary: Example of a response
-                  value:
-                    error: "You don't have permission to access this resource."
-                    status: 403
+          $ref: '#/components/responses/RegistrationResponse403'
         '409':
-          description: Conflict. User with this email already exists.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-              examples:
-                ErrorResponse:
-                  summary: Example of a response
-                  value:
-                    error: "User exists with same email"
-                    status: 409
+          $ref: '#/components/responses/RegistrationResponse409'
 
   /auth/login:
     post:
@@ -105,57 +56,14 @@ paths:
       tags:
         - Authentication
       requestBody:
-        description: User login credentials
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/UserLoginRequest'
-            examples:
-              LoginRequestExample:
-                summary: Valid login credentials
-                value:
-                  email: "user@example.com"
-                  password: "SecurePass123!"
+        $ref: '#/components/requestBodies/UserLoginRequestBody'
       responses:
         '200':
-          description: Authentication successful. Returns access and refresh tokens.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/TokenResponse'
-              examples:
-                SuccessfulLoginResponse:
-                  summary: Tokens issued successfully
-                  value:
-                    access_token: "eyJhbGciOiJSUzI1NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJ...<truncated>"
-                    refresh_token: "eyJhbGciOiJIUzUxMiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICI...<truncated>"
-                    expires_in: 300
-                    token_type: "Bearer"
+          $ref: '#/components/responses/UserLoginResponse200'
         '400':
-          description: Bad request. Validation failed (e.g., missing fields or invalid email format)
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-              examples:
-                ValidationError:
-                  summary: Input validation failed
-                  value:
-                    error: "Email must be a valid email address"
-                    status: 400
+          $ref: '#/components/responses/Response400'
         '401':
-          description: Unauthorized. Invalid email or password
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-              examples:
-                InvalidCredentials:
-                  summary: Authentication failed
-                  value:
-                    error: "Invalid user credentials"
-                    status: 401
+          $ref: '#/components/responses/Response401'
 
   /auth/refresh-token:
     post:
@@ -171,56 +79,14 @@ paths:
       tags:
         - Authentication
       requestBody:
-        description: Refresh token request
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/TokenRefreshRequest'
-            examples:
-              RefreshTokenExample:
-                summary: Valid refresh token request
-                value:
-                  refresh_token: "eyJhbGciOiJIUzUxMiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICI...<truncated>"
+        $ref: '#/components/requestBodies/RefreshTokenRequestBody'
       responses:
         '200':
-          description: Access token successfully refreshed
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/TokenResponse'
-              examples:
-                SuccessfulRefreshResponse:
-                  summary: New tokens issued
-                  value:
-                    access_token: "eyJhbGciOiJSUzI1NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJ...<truncated>"
-                    refresh_token: "eyJhbGciOiJIUzUxMiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICI...<truncated>"
-                    expires_in: 300
-                    token_type: "Bearer"
+          $ref: '#/components/responses/RefreshTokenResponse200'
         '400':
-          description: Bad request. Missing or invalid refresh token
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-              examples:
-                MissingRefreshToken:
-                  summary: Validation error
-                  value:
-                    error: "RefreshToken field is required"
-                    status: 400
+          $ref: '#/components/responses/RefreshTokenResponse400'
         '401':
-          description: Unauthorized. Invalid, expired, or revoked refresh token
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-              examples:
-                InvalidRefreshToken:
-                  summary: Token validation failed
-                  value:
-                    error: "Token is not active"
-                    status: 401
+          $ref: '#/components/responses/RefreshTokenResponse401'
 
   /auth/me:
     get:
@@ -252,33 +118,128 @@ paths:
         - bearerAuth: [ ]
       responses:
         '200':
-          description: User profile retrieved successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/UserInfoResponse'
-              examples:
-                SuccessfulResponse:
-                  summary: Example of a valid user profile
-                  value:
-                    id: "a1b2c3d4-e5f6-7890-g1h2-i3j4k5l6m7n8"
-                    email: "user@example.com"
-                    created_at: "2026-02-25T17:01:53.471Z"
-                    roles: [ ]
+          $ref: '#/components/responses/GetMeResponse200'
         '401':
           description: Unauthorized. Invalid, missing, or expired access token
         '404':
-          description: Not Found. User referenced in token does not exist in Keycloak
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-              examples:
-                UserNotFound:
-                  summary: User was deleted after token issuance
-                  value:
-                    error: "Authentication error: User not found"
-                    status: 404
+          $ref: '#/components/responses/UserResponse404'
+
+########################################################################################################################
+###########################                         Individuals Api                          ###########################
+########################################################################################################################
+
+  /individuals/me:
+    put:
+      operationId: update
+      summary: Update individual
+      description: |
+        Updates an existing Individual's data (first name, last name, contact info, address, etc).
+
+        **Validation rules:**
+        - Only non-null fields are updated (partial updates supported)
+        - Address and User fields can be updated independently
+        - Country must still exist in reference table
+
+        **Audit note:**
+        All changes are automatically tracked by Hibernate Envers. Historical versions can be retrieved via separate audit endpoints (not part of this spec).
+
+        **Error scenarios:**
+        - `400 Bad Request`: Invalid field values
+        - `404 Not Found`: Individual does not exist
+      tags:
+        - Individuals
+      requestBody:
+        $ref: '../../person-service/openapi/person-service-api.yaml#/components/requestBodies/IndividualUpdateRequestBody'
+      responses:
+        '200':
+          $ref: '../../person-service/openapi/person-service-api.yaml#/components/responses/SuccessfulIndividualResponse'
+        '400':
+          $ref: '../../person-service/openapi/person-service-api.yaml#/components/responses/BadRequest'
+        '404':
+          $ref: '../../person-service/openapi/person-service-api.yaml#/components/responses/NotFound'
+
+  /individuals/me/{id}:
+    get:
+      operationId: getById
+      summary: Get individual by ID
+      description: |
+        Retrieves an individual by his UUID, including full user, address and country details.
+
+        **Error scenarios:**
+        - `404 Not Found`: No individual exists with the given ID
+      tags:
+        - Individuals
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          example: "a1b2c3d4-e5f6-7890-g1h2-i3j4k5l6m7n8"
+      responses:
+        '200':
+          $ref: '../../person-service/openapi/person-service-api.yaml#/components/responses/SuccessfulIndividualResponse'
+        '404':
+          $ref: '../../person-service/openapi/person-service-api.yaml#/components/responses/NotFound'
+
+    delete:
+      operationId: delete
+      summary: Delete individual
+      description: |
+        Soft-deletes a individual by marking related records as archived.
+        Actual database rows are not removed (to preserve audit history).
+
+        **Note:** This operation is irreversible from the API perspective.
+
+        **Error scenarios:**
+        - `404 Not Found`: Individual does not exist
+      tags:
+        - Individuals
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          example: "a1b2c3d4-e5f6-7890-g1h2-i3j4k5l6m7n8"
+      responses:
+        '204':
+          description: Individual deleted (archived)
+        '404':
+          $ref: '../../person-service/openapi/person-service-api.yaml#/components/responses/NotFound'
+
+  /individuals/me/email/{email}:
+    get:
+      operationId: getByEmail
+      summary: Get individual by email
+      description: |
+        Retrieves an individual by his user email.
+
+        **Use case:** Used by `individuals-api` during registration to check for duplicates.
+
+        **Error scenarios:**
+        - `404 Not Found`: No individual with this user email
+      tags:
+        - Individuals
+      parameters:
+        - name: email
+          in: path
+          required: true
+          schema:
+            type: string
+            format: email
+          example: "john.doe@example.com"
+      responses:
+        '200':
+          $ref: '../../person-service/openapi/person-service-api.yaml#/components/responses/SuccessfulIndividualResponse'
+        '404':
+          $ref: '../../person-service/openapi/person-service-api.yaml#/components/responses/NotFound'
+
+########################################################################################################################
+##########################               components: schemas: Create Requests                ###########################
+########################################################################################################################
 
 components:
   securitySchemes:
@@ -288,17 +249,6 @@ components:
       bearerFormat: JWT
 
   schemas:
-    UserRegistrationRequest:
-      type: object
-      required: [ email, password, confirm_password ]
-      properties:
-        email:
-          type: string
-          format: email
-        password:
-          type: string
-        confirm_password:
-          type: string
 
     UserLoginRequest:
       type: object
@@ -345,10 +295,192 @@ components:
           type: string
           format: date-time
 
-    ErrorResponse:
-      type: object
-      properties:
-        error:
-          type: string
-        status:
-          type: integer
+########################################################################################################################
+############################                components: responses: Examples                 ############################
+########################################################################################################################
+
+  responses:
+
+    RegistrationResponse201:
+      description: Individual registered successfully. Returns tokens.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/TokenResponse'
+          examples:
+            Successful Response:
+              summary: Example of a response
+              value:
+                access_token: "eyJhbGciOiJSUzI1NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJ...<truncated>"
+                refresh_token: "eyJhbGciOiJIUzUxMiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICI...<truncated>"
+                expires_in: 300
+                token_type: "Bearer"
+
+    UserLoginResponse200:
+      description: Authentication successful. Returns access and refresh tokens.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/TokenResponse'
+          examples:
+            SuccessfulLoginResponse:
+              summary: Tokens issued successfully
+              value:
+                access_token: "eyJhbGciOiJSUzI1NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJ...<truncated>"
+                refresh_token: "eyJhbGciOiJIUzUxMiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICI...<truncated>"
+                expires_in: 300
+                token_type: "Bearer"
+
+    Response400:
+      description: Bad request. Validation failed (e.g., missing fields or invalid email format)
+      content:
+        application/json:
+          schema:
+            $ref: '../../person-service/openapi/person-service-api.yaml#/components/schemas/ErrorResponse'
+          examples:
+            ErrorResponse:
+              summary: Input validation failed
+              value:
+                error: "Password and confirmation don't match"
+                status: 400
+
+    Response401:
+      description: Unauthorized. Invalid email or password
+      content:
+        application/json:
+          schema:
+            $ref: '../../person-service/openapi/person-service-api.yaml#/components/schemas/ErrorResponse'
+          examples:
+            InvalidCredentials:
+              summary: Authentication failed
+              value:
+                error: "Invalid user credentials"
+                status: 401
+
+    RegistrationResponse403:
+      description: Forbidden. Server misconfiguration (contact admin).
+      content:
+        application/json:
+          schema:
+            $ref: '../../person-service/openapi/person-service-api.yaml#/components/schemas/ErrorResponse'
+          examples:
+            ErrorResponse:
+              summary: Example of a response
+              value:
+                error: "You don't have permission to access this resource."
+                status: 403
+
+    UserResponse404:
+      description: Not Found. User referenced in token does not exist in Keycloak
+      content:
+        application/json:
+          schema:
+            $ref: '../../person-service/openapi/person-service-api.yaml#/components/schemas/ErrorResponse'
+          examples:
+            UserNotFound:
+              summary: User was deleted after token issuance
+              value:
+                error: "Authentication error: User not found"
+                status: 404
+
+    RegistrationResponse409:
+      description: Conflict. User with this email already exists.
+      content:
+        application/json:
+          schema:
+            $ref: '../../person-service/openapi/person-service-api.yaml#/components/schemas/ErrorResponse'
+          examples:
+            ErrorResponse:
+              summary: Example of a response
+              value:
+                error: "User exists with same email"
+                status: 409
+
+    RefreshTokenResponse200:
+      description: Access token successfully refreshed
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/TokenResponse'
+          examples:
+            SuccessfulRefreshResponse:
+              summary: New tokens issued
+              value:
+                access_token: "eyJhbGciOiJSUzI1NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJ...<truncated>"
+                refresh_token: "eyJhbGciOiJIUzUxMiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICI...<truncated>"
+                expires_in: 300
+                token_type: "Bearer"
+
+    RefreshTokenResponse400:
+      description: Bad request. Missing or invalid refresh token
+      content:
+        application/json:
+          schema:
+            $ref: '../../person-service/openapi/person-service-api.yaml#/components/schemas/ErrorResponse'
+          examples:
+            MissingRefreshToken:
+              summary: Validation error
+              value:
+                error: "RefreshToken field is required"
+                status: 400
+
+    RefreshTokenResponse401:
+      description: Unauthorized. Invalid, expired, or revoked refresh token
+      content:
+        application/json:
+          schema:
+            $ref: '../../person-service/openapi/person-service-api.yaml#/components/schemas/ErrorResponse'
+          examples:
+            InvalidRefreshToken:
+              summary: Token validation failed
+              value:
+                error: "Token is not active"
+                status: 401
+
+    GetMeResponse200:
+      description: User profile retrieved successfully
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/UserInfoResponse'
+          examples:
+            SuccessfulResponse:
+              summary: Example of a valid user profile
+              value:
+                id: "a1b2c3d4-e5f6-7890-g1h2-i3j4k5l6m7n8"
+                email: "user@example.com"
+                created_at: "2026-02-25T17:01:53.471Z"
+                roles: [ ]
+
+########################################################################################################################
+###############################                components: requestBodies                 ###############################
+########################################################################################################################
+
+  requestBodies:
+
+    UserLoginRequestBody:
+      description: User login credentials
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/UserLoginRequest'
+          examples:
+            LoginRequestExample:
+              summary: Valid login credentials
+              value:
+                email: "user@example.com"
+                password: "SecurePass123!"
+
+    RefreshTokenRequestBody:
+      description: Refresh token request
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/TokenRefreshRequest'
+          examples:
+            RefreshTokenExample:
+              summary: Valid refresh token request
+              value:
+                refresh_token: "eyJhbGciOiJIUzUxMiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICI...<truncated>"

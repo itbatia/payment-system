@@ -4,10 +4,10 @@ import java.time.OffsetDateTime;
 import java.util.Objects;
 import java.util.UUID;
 
-import by.itbatia.psp.common.dto.internal.AddressUpdateRequest;
-import by.itbatia.psp.common.dto.internal.IndividualCreateRequest;
-import by.itbatia.psp.common.dto.internal.IndividualUpdateRequest;
-import by.itbatia.psp.common.dto.internal.IndividualResponse;
+import by.itbatia.psp.common.dto.AddressUpdateRequest;
+import by.itbatia.psp.common.dto.IndividualCreateRequest;
+import by.itbatia.psp.common.dto.IndividualUpdateRequest;
+import by.itbatia.psp.common.dto.IndividualResponse;
 import by.itbatia.psp.personservice.entity.AddressEntity;
 import by.itbatia.psp.personservice.entity.CountryEntity;
 import by.itbatia.psp.personservice.entity.IndividualEntity;

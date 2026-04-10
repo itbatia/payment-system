@@ -2,7 +2,7 @@ package by.itbatia.psp.individualsapi.it;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
-import by.itbatia.psp.individualsapi.dto.ErrorResponse;
+import by.itbatia.psp.common.dto.ErrorResponse;
 import by.itbatia.psp.individualsapi.dto.TokenRefreshRequest;
 import by.itbatia.psp.individualsapi.dto.TokenResponse;
 import by.itbatia.psp.individualsapi.dto.UserInfoResponse;

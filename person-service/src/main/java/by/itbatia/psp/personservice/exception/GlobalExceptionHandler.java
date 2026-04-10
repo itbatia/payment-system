@@ -1,7 +1,6 @@
 package by.itbatia.psp.personservice.exception;
 
-import by.itbatia.psp.common.dto.internal.ErrorResponse;
-import lombok.RequiredArgsConstructor;
+import by.itbatia.psp.common.dto.ErrorResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.NonNull;
 import org.springframework.http.HttpStatus;
@@ -16,7 +15,6 @@ import org.springframework.web.util.BindErrorUtils;
  */
 @Slf4j
 @RestControllerAdvice
-@RequiredArgsConstructor
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(ApiException.class)

@@ -2,9 +2,9 @@ package by.itbatia.psp.personservice.rest;
 
 import java.util.UUID;
 
-import by.itbatia.psp.common.dto.internal.IndividualCreateRequest;
-import by.itbatia.psp.common.dto.internal.IndividualResponse;
-import by.itbatia.psp.common.dto.internal.IndividualUpdateRequest;
+import by.itbatia.psp.common.dto.IndividualCreateRequest;
+import by.itbatia.psp.common.dto.IndividualResponse;
+import by.itbatia.psp.common.dto.IndividualUpdateRequest;
 import by.itbatia.psp.personservice.api.IndividualsApi;
 import by.itbatia.psp.personservice.service.IndividualService;
 import by.itbatia.psp.personservice.util.ThreadUtil;
@@ -22,7 +22,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1")
-public class IndividualController implements IndividualsApi {
+public class IndividualController implements IndividualsApi  {
 
     private final IndividualService individualService;
 

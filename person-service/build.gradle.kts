@@ -95,6 +95,7 @@ dependencies {
     testCompileOnly("org.projectlombok:lombok:${project.property("lombokVersion")}")
     testAnnotationProcessor("org.projectlombok:lombok:${project.property("lombokVersion")}")
 
+    // PSP projects
      implementation(project(":common")) // from local
 //    implementation("by.itbatia.psp:common:${project.property("commonVersion")}") // from Nexus
 }
@@ -122,7 +123,7 @@ tasks.register<org.openapitools.generator.gradle.plugin.tasks.GenerateTask>("gen
     generatorName.set("spring")
     inputSpec.set("$rootDir/person-service/openapi/person-service-api.yaml")
     outputDir.set("$rootDir/common")
-    modelPackage.set("by.itbatia.psp.common.dto.internal")
+    modelPackage.set("by.itbatia.psp.common.dto")
 
     globalProperties.set(
         mapOf(
@@ -153,7 +154,7 @@ tasks.register<org.openapitools.generator.gradle.plugin.tasks.GenerateTask>("gen
     inputSpec.set("$rootDir/person-service/openapi/person-service-api.yaml")
     outputDir.set(layout.buildDirectory.dir("generated-sources/openapi").get().asFile.absolutePath)
     apiPackage.set("by.itbatia.psp.personservice.api")
-    modelPackage.set("by.itbatia.psp.common.dto.internal")
+    modelPackage.set("by.itbatia.psp.common.dto")
 
     globalProperties.set(                            // ← docs - https://openapi-generator.tech/docs/generators/spring/
         mapOf(

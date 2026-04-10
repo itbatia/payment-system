@@ -5,7 +5,11 @@ import java.util.List;
 import by.itbatia.psp.individualsapi.dto.UserInfoResponse;
 import by.itbatia.psp.individualsapi.security.JwtGrantedAuthoritiesConverter;
 import lombok.experimental.UtilityClass;
+import org.springframework.security.core.context.ReactiveSecurityContextHolder;
+import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
+import reactor.core.publisher.Mono;
 
 /**
  * @author Batsian_SV
@@ -41,5 +45,12 @@ public class RestUtil {
     public static void enrichWithRoles(UserInfoResponse userInfoResponse, Jwt principal) {
         List<String> roles = JwtGrantedAuthoritiesConverter.extractRoles(principal);
         userInfoResponse.setRoles(roles);
+    }
+
+    public static Mono<Jwt> getPrincipal() {
+        return ReactiveSecurityContextHolder.getContext()
+            .mapNotNull(SecurityContext::getAuthentication)
+            .cast(JwtAuthenticationToken.class)
+            .map(JwtAuthenticationToken::getToken);
     }
 }

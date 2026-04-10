@@ -1,8 +1,8 @@
 package by.itbatia.psp.personservice.mapper;
 
-import by.itbatia.psp.common.dto.internal.IndividualCreateRequest;
-import by.itbatia.psp.common.dto.internal.IndividualResponse;
-import by.itbatia.psp.common.dto.internal.IndividualUpdateRequest;
+import by.itbatia.psp.common.dto.IndividualCreateRequest;
+import by.itbatia.psp.common.dto.IndividualResponse;
+import by.itbatia.psp.common.dto.IndividualUpdateRequest;
 import by.itbatia.psp.personservice.entity.IndividualEntity;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;

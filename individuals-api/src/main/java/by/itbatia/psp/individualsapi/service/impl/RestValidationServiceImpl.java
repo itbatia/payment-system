@@ -1,8 +1,9 @@
 package by.itbatia.psp.individualsapi.service.impl;
 
+import by.itbatia.psp.common.dto.IndividualCreateRequest;
+import by.itbatia.psp.common.dto.UserCreateRequest;
 import by.itbatia.psp.individualsapi.dto.TokenRefreshRequest;
 import by.itbatia.psp.individualsapi.dto.UserLoginRequest;
-import by.itbatia.psp.individualsapi.dto.UserRegistrationRequest;
 import by.itbatia.psp.individualsapi.exception.api.BadRequestApiException;
 import by.itbatia.psp.individualsapi.service.MetricsService;
 import by.itbatia.psp.individualsapi.service.RestValidationService;
@@ -22,14 +23,16 @@ public class RestValidationServiceImpl implements RestValidationService {
     private final MetricsService metricsService;
 
     @Override
-    public void validate(UserRegistrationRequest request) throws BadRequestApiException {
+    public void validate(IndividualCreateRequest request) throws BadRequestApiException {
         try {
             checkForNull(request);
-            checkForNull(request.getEmail(), "Email");
-            checkForNull(request.getPassword(), "Password");
-            checkForNull(request.getConfirmPassword(), "ConfirmPassword");
-            checkPasswordsMatches(request);
-            checkEmail(request.getEmail());
+            UserCreateRequest user = request.getUser();
+            checkForNull(user);
+            checkForNull(user.getEmail(), "Email");
+            checkForNull(user.getPassword(), "Password");
+            checkForNull(user.getConfirmPassword(), "ConfirmPassword");
+            checkPasswordsMatches(user);
+            checkEmail(user.getEmail());
 
         } catch (Exception exception) {
             metricsService.incrementFailedRegistration();
@@ -73,8 +76,8 @@ public class RestValidationServiceImpl implements RestValidationService {
         return value == null || value.isEmpty();
     }
 
-    private static void checkPasswordsMatches(UserRegistrationRequest request) throws BadRequestApiException {
-        if (request.getPassword().equals(request.getConfirmPassword())) {
+    private static void checkPasswordsMatches(UserCreateRequest user) throws BadRequestApiException {
+        if (user.getPassword().equals(user.getConfirmPassword())) {
             return;
         }
         throw new BadRequestApiException("Password and confirmation do not match");

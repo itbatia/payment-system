@@ -55,9 +55,12 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-actuator")
     runtimeOnly("io.micrometer:micrometer-registry-prometheus:${project.property("micrometerRegistryPrometheusVersion")}")
 
-    // Lombok
+    // Lombok + Mapstruct
     compileOnly("org.projectlombok:lombok:${project.property("lombokVersion")}")
     annotationProcessor("org.projectlombok:lombok:${project.property("lombokVersion")}")
+    implementation("org.mapstruct:mapstruct:${project.property("mapstructVersion")}")
+    annotationProcessor("org.mapstruct:mapstruct-processor:${project.property("mapstructVersion")}")
+    annotationProcessor("org.projectlombok:lombok-mapstruct-binding:${project.property("lombokMapstructBindingVersion")}")
 
     // Logback
     implementation("net.logstash.logback:logstash-logback-encoder:${project.property("logstashLogbackEncoderVersion")}")
@@ -70,6 +73,10 @@ dependencies {
 
     testCompileOnly("org.projectlombok:lombok:${project.property("lombokVersion")}")
     testAnnotationProcessor("org.projectlombok:lombok:${project.property("lombokVersion")}")
+
+    // PSP projects
+    implementation(project(":common")) // from local
+//    implementation("by.itbatia.psp:common:${project.property("commonVersion")}") // from Nexus
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -97,6 +104,25 @@ openApiGenerate {
     outputDir.set(layout.buildDirectory.dir("generated-sources/openapi").get().asFile.absolutePath)
     modelPackage.set("by.itbatia.psp.individualsapi.dto")
     apiPackage.set("by.itbatia.psp.individualsapi.api")
+
+    importMappings.set(                             // import DTO из common, которые используются в OpenAPI-спецификации
+        mapOf(
+            "IndividualCreateRequest" to "by.itbatia.psp.common.dto.IndividualCreateRequest",
+            "IndividualUpdateRequest" to "by.itbatia.psp.common.dto.IndividualUpdateRequest",
+            "IndividualResponse" to "by.itbatia.psp.common.dto.IndividualResponse",
+
+            "UserCreateRequest" to "by.itbatia.psp.common.dto.UserCreateRequest",
+            "UserUpdateRequest" to "by.itbatia.psp.common.dto.UserUpdateRequest",
+            "UserResponse" to "by.itbatia.psp.common.dto.UserResponse",
+
+            "AddressCreateRequest" to "by.itbatia.psp.common.dto.AddressCreateRequest",
+            "AddressUpdateRequest" to "by.itbatia.psp.common.dto.AddressUpdateRequest",
+            "AddressResponse" to "by.itbatia.psp.common.dto.AddressResponse",
+
+            "CountryResponse" to "by.itbatia.psp.common.dto.CountryResponse",
+            "ErrorResponse" to "by.itbatia.psp.common.dto.ErrorResponse"
+        )
+    )
 
     globalProperties.set(
         mapOf(
@@ -141,6 +167,7 @@ tasks.named("compileJava") {
 //////                                    Очистка пустых артефактов генерации                                     //////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+// Удаляем пустые сгенерированные директории:
 tasks.register("deleteGeneratedEmptyDirs") {
     doLast {
         val genDir = layout.buildDirectory.dir("generated-sources/openapi/src/main/java").get().asFile
@@ -158,8 +185,39 @@ tasks.register("deleteGeneratedEmptyDirs") {
     }
 }
 
+// Удаляем ненужные сгенерированные DTO из individuals-api:
+tasks.register("deleteGeneratedExtraDto") {
+    doLast {
+        val generatedDtoDir = layout.buildDirectory.dir("generated-sources/openapi/src/main/java/by/itbatia/psp/individualsapi/dto").get().asFile
+        listOf(
+            "IndividualCreateRequest.java",
+            "IndividualUpdateRequest.java",
+            "IndividualResponse.java",
+
+            "UserCreateRequest.java",
+            "UserUpdateRequest.java",
+            "UserResponse.java",
+
+            "AddressCreateRequest.java",
+            "AddressUpdateRequest.java",
+            "AddressResponse.java",
+
+            "CountryResponse.java",
+            "ErrorResponse.java"
+
+        ).forEach { fileName ->
+            val file = File(generatedDtoDir, fileName)
+            if (file.exists()) {
+                println("Removed unnecessary generated file: ${file.name}")
+                file.delete()
+            }
+        }
+    }
+}
+
 tasks.named("openApiGenerate") {
     finalizedBy(tasks.named("deleteGeneratedEmptyDirs"))
+    finalizedBy(tasks.named("deleteGeneratedExtraDto"))
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
