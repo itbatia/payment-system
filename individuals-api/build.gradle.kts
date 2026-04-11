@@ -126,7 +126,7 @@ openApiGenerate {
 
     globalProperties.set(
         mapOf(
-            "models" to "",                         // ← включить генерацию DTO (""=all)
+            "models" to "TokenRefreshRequest, TokenResponse, UserInfoResponse, UserLoginRequest", // ← включить генерацию DTO
             "apis" to "",                           // ← включить генерацию API (""=all)
             "supportingFiles" to "false"            // ← не включить генерацию Utils (-ApiUtil)
         )
@@ -185,39 +185,8 @@ tasks.register("deleteGeneratedEmptyDirs") {
     }
 }
 
-// Удаляем ненужные сгенерированные DTO из individuals-api:
-tasks.register("deleteGeneratedExtraDto") {
-    doLast {
-        val generatedDtoDir = layout.buildDirectory.dir("generated-sources/openapi/src/main/java/by/itbatia/psp/individualsapi/dto").get().asFile
-        listOf(
-            "IndividualCreateRequest.java",
-            "IndividualUpdateRequest.java",
-            "IndividualResponse.java",
-
-            "UserCreateRequest.java",
-            "UserUpdateRequest.java",
-            "UserResponse.java",
-
-            "AddressCreateRequest.java",
-            "AddressUpdateRequest.java",
-            "AddressResponse.java",
-
-            "CountryResponse.java",
-            "ErrorResponse.java"
-
-        ).forEach { fileName ->
-            val file = File(generatedDtoDir, fileName)
-            if (file.exists()) {
-                println("Removed unnecessary generated file: ${file.name}")
-                file.delete()
-            }
-        }
-    }
-}
-
 tasks.named("openApiGenerate") {
     finalizedBy(tasks.named("deleteGeneratedEmptyDirs"))
-    finalizedBy(tasks.named("deleteGeneratedExtraDto"))
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

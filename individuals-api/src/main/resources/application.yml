@@ -27,6 +27,9 @@ individuals-api:
     client-secret: ${KC_CLIENT_SECRET}
     connection-timeout: ${KC_CONNECTION_TIMEOUT}
     admin-token-caching-time-in-sec: ${KC_ADMIN_TOKEN_CACHING_TIME_IN_SEC}
+  person-service-client:
+    base-url: ${PERSON_SERVICE_BASE_URL}
+    connection-timeout: ${PERSON_SERVICE_CONNECTION_TIMEOUT}
 
 # ==================================================================================================================== #
 # SPRING config                                                                                                        #

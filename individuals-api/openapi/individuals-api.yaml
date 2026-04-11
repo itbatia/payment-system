@@ -128,37 +128,8 @@ paths:
 ###########################                         Individuals Api                          ###########################
 ########################################################################################################################
 
-  /individuals/me:
-    put:
-      operationId: update
-      summary: Update individual
-      description: |
-        Updates an existing Individual's data (first name, last name, contact info, address, etc).
-
-        **Validation rules:**
-        - Only non-null fields are updated (partial updates supported)
-        - Address and User fields can be updated independently
-        - Country must still exist in reference table
-
-        **Audit note:**
-        All changes are automatically tracked by Hibernate Envers. Historical versions can be retrieved via separate audit endpoints (not part of this spec).
-
-        **Error scenarios:**
-        - `400 Bad Request`: Invalid field values
-        - `404 Not Found`: Individual does not exist
-      tags:
-        - Individuals
-      requestBody:
-        $ref: '../../person-service/openapi/person-service-api.yaml#/components/requestBodies/IndividualUpdateRequestBody'
-      responses:
-        '200':
-          $ref: '../../person-service/openapi/person-service-api.yaml#/components/responses/SuccessfulIndividualResponse'
-        '400':
-          $ref: '../../person-service/openapi/person-service-api.yaml#/components/responses/BadRequest'
-        '404':
-          $ref: '../../person-service/openapi/person-service-api.yaml#/components/responses/NotFound'
-
   /individuals/me/{id}:
+
     get:
       operationId: getById
       summary: Get individual by ID
@@ -210,10 +181,11 @@ paths:
         '404':
           $ref: '../../person-service/openapi/person-service-api.yaml#/components/responses/NotFound'
 
-  /individuals/me/email/{email}:
+  /individuals/me:
+
     get:
       operationId: getByEmail
-      summary: Get individual by email
+      summary: Get individual by User email
       description: |
         Retrieves an individual by his user email.
 
@@ -223,17 +195,38 @@ paths:
         - `404 Not Found`: No individual with this user email
       tags:
         - Individuals
-      parameters:
-        - name: email
-          in: path
-          required: true
-          schema:
-            type: string
-            format: email
-          example: "john.doe@example.com"
       responses:
         '200':
           $ref: '../../person-service/openapi/person-service-api.yaml#/components/responses/SuccessfulIndividualResponse'
+        '404':
+          $ref: '../../person-service/openapi/person-service-api.yaml#/components/responses/NotFound'
+
+    put:
+      operationId: update
+      summary: Update individual
+      description: |
+        Updates an existing Individual's data (first name, last name, contact info, address, etc).
+
+        **Validation rules:**
+        - Only non-null fields are updated (partial updates supported)
+        - Address and User fields can be updated independently
+        - Country must still exist in reference table
+
+        **Audit note:**
+        All changes are automatically tracked by Hibernate Envers. Historical versions can be retrieved via separate audit endpoints (not part of this spec).
+
+        **Error scenarios:**
+        - `400 Bad Request`: Invalid field values
+        - `404 Not Found`: Individual does not exist
+      tags:
+        - Individuals
+      requestBody:
+        $ref: '../../person-service/openapi/person-service-api.yaml#/components/requestBodies/IndividualUpdateRequestBody'
+      responses:
+        '200':
+          $ref: '../../person-service/openapi/person-service-api.yaml#/components/responses/SuccessfulIndividualResponse'
+        '400':
+          $ref: '../../person-service/openapi/person-service-api.yaml#/components/responses/BadRequest'
         '404':
           $ref: '../../person-service/openapi/person-service-api.yaml#/components/responses/NotFound'
 

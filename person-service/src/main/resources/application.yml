@@ -28,9 +28,9 @@ spring:
         time_zone: Europe/Minsk                           # Set up a time zone.
   flyway:
     enabled: true                                         # Enable migrations (by default true).
-    url: jdbc:postgresql://localhost:5432/psp
-    user: postgres
-    password: postgres
+    url: ${spring.datasource.url}
+    user: ${spring.datasource.username}
+    password: ${spring.datasource.password}
     locations: classpath:db/migration
 
 #management:

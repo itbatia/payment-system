@@ -4,10 +4,13 @@ import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
+import java.util.Map;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
+
+import static by.itbatia.psp.individualsapi.util.KeycloakConstantUtil.USER_ID_KC_ATTRIBUTE;
 
 /**
  * @author Batsian_SV
@@ -20,8 +23,10 @@ import lombok.Data;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class KeycloakUserRepresentation {
 
+    @JsonProperty(access = JsonProperty.Access.READ_WRITE)
     private String email;
 
+    // To KC
     @JsonProperty(access = JsonProperty.Access.READ_ONLY)
     private String username;
     @JsonProperty(access = JsonProperty.Access.READ_ONLY)
@@ -30,7 +35,10 @@ public class KeycloakUserRepresentation {
     private boolean emailVerified;
     @JsonProperty(access = JsonProperty.Access.READ_ONLY)
     private List<Credential> credentials;
+    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
+    private Map<String, List<String>> attributes;
 
+    // From KC
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private String id;
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
@@ -64,14 +72,21 @@ public class KeycloakUserRepresentation {
      * 3. By default, user is {@code enabled}. Required field;<br>
      * 4. {@code emailVerified} - to skip warning 'Not verified'.
      */
-    public static KeycloakUserRepresentation build(String email, String password) {
+    public static KeycloakUserRepresentation build(UserRegistrationRequest request) {
         KeycloakUserRepresentation kcUser = new KeycloakUserRepresentation();
+
+        String email = request.getEmail();
+        String password = request.getPassword();
+        String personServiceUserId = request.getUserId().toString();
+        List<Credential> credentials = List.of(new Credential(password));
+        Map<String, List<String>> attributes = Map.of(USER_ID_KC_ATTRIBUTE, List.of(personServiceUserId));
 
         kcUser.setEmail(email);
         kcUser.setUsername(email);
         kcUser.setEnabled(true);
         kcUser.setEmailVerified(true);
-        kcUser.setCredentials(List.of(new Credential(password)));
+        kcUser.setCredentials(credentials);
+        kcUser.setAttributes(attributes);
 
         return kcUser;
     }

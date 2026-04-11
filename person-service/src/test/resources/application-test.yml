@@ -9,19 +9,19 @@ server:
 # ==================================================================================================================== #
 spring:
   datasource:
-    username: postgres
-    password: itbatia7104203
-    url: jdbc:postgresql://localhost:5432/psp2
+    username: test
+    password: test
+    url: jdbc:tc:postgresql:16://localhost:5432/test
   jpa:
-    show-sql: true                                        # Enable SQL logging.
+    show-sql: false
     properties:
       hibernate:
-        dialect: org.hibernate.dialect.PostgreSQLDialect  # Optional.
-        format_sql: true                                  # Beautiful SQL formatting in logs.
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: false
       jdbc:
-        time_zone: Europe/Minsk                           # Set up a time zone.
+        time_zone: Europe/Minsk
   flyway:
-    enabled: true                                         # Enable migrations (by default true).
+    enabled: true
     url: ${spring.datasource.url}
     user: ${spring.datasource.username}
     password: ${spring.datasource.password}
@@ -30,4 +30,8 @@ spring:
 # ==================================================================================================================== #
 # METRICS config                                                                                                       #
 # ==================================================================================================================== #
-
+management:
+  prometheus:
+    metrics:
+      export:
+        enabled: false

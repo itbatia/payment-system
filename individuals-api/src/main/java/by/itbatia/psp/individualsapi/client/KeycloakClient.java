@@ -16,6 +16,7 @@ import static by.itbatia.psp.individualsapi.util.KeycloakConstantUtil.USERNAME;
 import by.itbatia.psp.individualsapi.dto.TokenResponse;
 import by.itbatia.psp.individualsapi.dto.UserInfoResponse;
 import by.itbatia.psp.individualsapi.dto.KeycloakUserRepresentation;
+import by.itbatia.psp.individualsapi.dto.UserRegistrationRequest;
 import by.itbatia.psp.individualsapi.property.KeycloakProperties;
 import by.itbatia.psp.individualsapi.util.KeycloakUtil;
 import lombok.RequiredArgsConstructor;
@@ -64,8 +65,8 @@ public class KeycloakClient {
      *     <li>{@code 500} - Internal Server Error</li>
      * </ul>
      */
-    public Mono<@NonNull Void> createUser(String email, String password) {
-        KeycloakUserRepresentation kcUser = KeycloakUserRepresentation.build(email, password);
+    public Mono<@NonNull Void> createUser(UserRegistrationRequest request) {
+        KeycloakUserRepresentation kcUser = KeycloakUserRepresentation.build(request);
 
         return keycloakAdminTokenClient.getValidAdminToken()
             .flatMap(token -> create(kcUser, token));

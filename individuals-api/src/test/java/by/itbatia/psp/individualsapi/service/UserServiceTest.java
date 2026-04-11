@@ -58,7 +58,7 @@ public class UserServiceTest {
         UserRegistrationRequest request = UserRegistrationRequestUtil.build(EMAIL, PASSWORD);
         TokenResponse tokenResponse = TokenResponseUtil.build();
 
-        when(keycloakClient.createUser(anyString(), anyString()))
+        when(keycloakClient.createUser(any(UserRegistrationRequest.class)))
             .thenReturn(Mono.empty());
         when(tokenService.login(anyString(), anyString()))
             .thenReturn(Mono.just(tokenResponse));
@@ -74,9 +74,9 @@ public class UserServiceTest {
             .expectNext(tokenResponse)
             .verifyComplete();
 
-        verify(keycloakClient).createUser(EMAIL, PASSWORD);
+        verify(keycloakClient).createUser(request);
         verify(tokenService).login(EMAIL, PASSWORD);
-        verify(keycloakClient, times(1)).createUser(eq(EMAIL), eq(PASSWORD));
+        verify(keycloakClient, times(1)).createUser(eq(request));
         verify(tokenService, times(1)).login(eq(EMAIL), eq(PASSWORD));
         verify(metricsService).incrementSuccessfulRegistration();
         verify(metricsService).stopTimerOnSuccess(any(), eq(Meter.KC_REGISTRATION_LATENCY));
@@ -88,7 +88,7 @@ public class UserServiceTest {
         // given
         UserRegistrationRequest request = UserRegistrationRequestUtil.build(EMAIL, PASSWORD);
 
-        when(keycloakClient.createUser(anyString(), anyString()))
+        when(keycloakClient.createUser(any(UserRegistrationRequest.class)))
             .thenReturn(Mono.error(new KeycloakException(HttpStatus.CONFLICT, ERROR_MSG)));
         when(tokenService.login(anyString(), anyString()))
             .thenReturn(Mono.empty());

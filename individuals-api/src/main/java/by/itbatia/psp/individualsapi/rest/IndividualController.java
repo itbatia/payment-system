@@ -1,16 +1,19 @@
 package by.itbatia.psp.individualsapi.rest;
 
-import java.util.UUID;
-
 import by.itbatia.psp.common.dto.IndividualResponse;
 import by.itbatia.psp.common.dto.IndividualUpdateRequest;
 import by.itbatia.psp.individualsapi.api.IndividualsApi;
+import by.itbatia.psp.individualsapi.client.PersonServiceClient;
+import by.itbatia.psp.individualsapi.util.RestUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
+
+import java.util.UUID;
 
 /**
  * @author Batsian_SV
@@ -20,65 +23,34 @@ import reactor.core.publisher.Mono;
 @RequestMapping("/api/v1")
 public class IndividualController implements IndividualsApi {
 
-    @Override
-    public Mono<ResponseEntity<Void>> delete(UUID id, ServerWebExchange exchange) {
-        return null;
-    }
+    private final PersonServiceClient personServiceClient;
 
     @Override
-    public Mono<ResponseEntity<IndividualResponse>> getByEmail(String email, ServerWebExchange exchange) {
-        return null;
-    }
-
-    @Override
+    @PreAuthorize("hasRole('USER')")
     public Mono<ResponseEntity<IndividualResponse>> getById(UUID id, ServerWebExchange exchange) {
-        return null;
+        return personServiceClient.getIndividualById(id)
+            .map(ResponseEntity::ok);
     }
 
     @Override
-    public Mono<ResponseEntity<IndividualResponse>> update(Mono<IndividualUpdateRequest> individualUpdateRequest, ServerWebExchange exchange) {
-        return null;
+    public Mono<ResponseEntity<IndividualResponse>> getByEmail(ServerWebExchange exchange) {
+        return RestUtil.getPrincipalUserEmail()
+            .flatMap(personServiceClient::getIndividualByUserEmail)
+            .map(ResponseEntity::ok);
     }
 
-    //    private final UserService userService;
-//    private final TokenService tokenService;
-//    private final PersonServiceClient personServiceClient;
-//    private final RestValidationService restValidationService;
-//
-//    @Override
-//    public Mono<@NonNull ResponseEntity<@NonNull TokenResponse>> registerUser(Mono<IndividualCreateRequest> request, ServerWebExchange exchange) {
-//        return request
-//            .doOnNext(restValidationService::validate)
-//            .flatMap(personServiceClient::createIndividual)
-//            .flatMap(userService::register)
-//            .map(tokenResponse -> ResponseEntity.status(HttpStatus.CREATED).body(tokenResponse));
-//    }
-//
-//    @Override
-//    public Mono<@NonNull ResponseEntity<@NonNull TokenResponse>> login(Mono<UserLoginRequest> request, ServerWebExchange exchange) {
-//        return request
-//            .doOnNext(restValidationService::validate)
-//            .flatMap(req -> tokenService.login(req.getEmail(), req.getPassword()))
-//            .map(tokenResponse -> ResponseEntity.status(HttpStatus.OK).body(tokenResponse));
-//    }
-//
-//    @Override
-//    public Mono<@NonNull ResponseEntity<@NonNull TokenResponse>> refreshToken(Mono<TokenRefreshRequest> request, ServerWebExchange exchange) {
-//        return request
-//            .doOnNext(restValidationService::validate)
-//            .flatMap(req -> tokenService.refresh(req.getRefreshToken()))
-//            .map(tokenResponse -> ResponseEntity.status(HttpStatus.OK).body(tokenResponse));
-//    }
-//
-//    @Override
-//    @PreAuthorize("hasRole('USER')")
-//    public Mono<@NonNull ResponseEntity<@NonNull UserInfoResponse>> getCurrentUser(ServerWebExchange exchange) {
-//        return RestUtil.getPrincipal()
-//            .flatMap(principal -> {
-//                String userId = principal.getSubject();
-//                return userService.getCurrentUser(userId)
-//                    .doOnNext(user -> RestUtil.enrichWithRoles(user, principal))
-//                    .map(ResponseEntity::ok);
-//            });
-//    }
+    @Override
+    @PreAuthorize("hasRole('USER')")
+    public Mono<ResponseEntity<IndividualResponse>> update(Mono<IndividualUpdateRequest> request, ServerWebExchange exchange) {
+        return request
+            .flatMap(personServiceClient::updateIndividual)
+            .map(ResponseEntity::ok);
+    }
+
+    @Override
+    @PreAuthorize("hasRole('USER')")
+    public Mono<ResponseEntity<Void>> delete(UUID id, ServerWebExchange exchange) {
+        return personServiceClient.deleteIndividual(id)
+            .map(_ -> ResponseEntity.noContent().build());
+    }
 }

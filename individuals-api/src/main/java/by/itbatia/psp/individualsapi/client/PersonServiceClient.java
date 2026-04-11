@@ -5,6 +5,7 @@ import java.util.UUID;
 import by.itbatia.psp.common.dto.ErrorResponse;
 import by.itbatia.psp.common.dto.IndividualCreateRequest;
 import by.itbatia.psp.common.dto.IndividualResponse;
+import by.itbatia.psp.common.dto.IndividualUpdateRequest;
 import by.itbatia.psp.individualsapi.dto.UserRegistrationRequest;
 import by.itbatia.psp.individualsapi.exception.api.PersonServiceApiException;
 import by.itbatia.psp.individualsapi.mapper.IndividualApiMapper;
@@ -43,7 +44,7 @@ public class PersonServiceClient {
             .map(response -> individualApiMapper.toUserRegistrationRequest(request, response));
     }
 
-    public Mono<IndividualResponse> getIndividual(UUID id) {
+    public Mono<IndividualResponse> getIndividualById(UUID id) {
         return personServiceWebClient
             .get()
             .uri("/api/v1/individuals/{id}", id)
@@ -52,6 +53,40 @@ public class PersonServiceClient {
             .onStatus(HttpStatusCode::is4xxClientError, this::handlePersonServiceException)
             .onStatus(HttpStatusCode::is5xxServerError, this::handleException)
             .bodyToMono(IndividualResponse.class);
+    }
+
+    public Mono<IndividualResponse> getIndividualByUserEmail(String email) {
+        return personServiceWebClient
+            .get()
+            .uri("/api/v1/individuals/email/{email}", email)
+            .accept(MediaType.APPLICATION_JSON)
+            .retrieve()
+            .onStatus(HttpStatusCode::is4xxClientError, this::handlePersonServiceException)
+            .onStatus(HttpStatusCode::is5xxServerError, this::handleException)
+            .bodyToMono(IndividualResponse.class);
+    }
+
+    public Mono<IndividualResponse> updateIndividual(IndividualUpdateRequest request) {
+        return personServiceWebClient
+            .put()
+            .uri("/api/v1/individuals")
+            .accept(MediaType.APPLICATION_JSON)
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(request)
+            .retrieve()
+            .onStatus(HttpStatusCode::is4xxClientError, this::handlePersonServiceException)
+            .onStatus(HttpStatusCode::is5xxServerError, this::handleException)
+            .bodyToMono(IndividualResponse.class);
+    }
+
+    public Mono<Void> deleteIndividual(UUID id) {
+        return personServiceWebClient
+            .delete()
+            .uri("/api/v1/individuals/{id}", id)
+            .retrieve()
+            .onStatus(HttpStatusCode::is4xxClientError, this::handlePersonServiceException)
+            .onStatus(HttpStatusCode::is5xxServerError, this::handleException)
+            .bodyToMono(Void.class);
     }
 
     private Mono<PersonServiceApiException> handlePersonServiceException(ClientResponse clientResponse) {

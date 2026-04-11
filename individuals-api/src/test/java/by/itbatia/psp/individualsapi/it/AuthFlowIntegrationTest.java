@@ -1,17 +1,18 @@
 package by.itbatia.psp.individualsapi.it;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
 
 import by.itbatia.psp.common.dto.ErrorResponse;
+import by.itbatia.psp.common.dto.IndividualCreateRequest;
+import by.itbatia.psp.individualsapi.client.PersonServiceClient;
 import by.itbatia.psp.individualsapi.dto.TokenRefreshRequest;
 import by.itbatia.psp.individualsapi.dto.TokenResponse;
 import by.itbatia.psp.individualsapi.dto.UserInfoResponse;
 import by.itbatia.psp.individualsapi.dto.UserLoginRequest;
 import by.itbatia.psp.individualsapi.dto.UserRegistrationRequest;
-import by.itbatia.psp.individualsapi.util.EmailUtil;
-import by.itbatia.psp.individualsapi.util.TokenRefreshRequestUtil;
-import by.itbatia.psp.individualsapi.util.UserLoginRequestUtil;
-import by.itbatia.psp.individualsapi.util.UserRegistrationRequestUtil;
+import by.itbatia.psp.individualsapi.util.*;
 import dasniko.testcontainers.keycloak.KeycloakContainer;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -23,9 +24,11 @@ import org.springframework.http.HttpStatus;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.reactive.server.WebTestClient;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import reactor.core.publisher.Mono;
 
 /**
  * @author Batsian_SV
@@ -43,9 +46,6 @@ class AuthFlowIntegrationTest {
     @DynamicPropertySource
     static void configureProperties(DynamicPropertyRegistry registry) {
         registry.add("individuals-api.keycloak.base-url", KEYCLOAK_CONTAINER::getAuthServerUrl);
-        registry.add("individuals-api.keycloak.realm", () -> "individuals");
-        registry.add("individuals-api.keycloak.client-id", () -> "individuals-api");
-        registry.add("individuals-api.keycloak.client-secret", () -> "test-secret");
     }
 
     private static final String PASSWORD = "SecurePass1!";
@@ -53,12 +53,16 @@ class AuthFlowIntegrationTest {
     @Autowired
     private WebTestClient webTestClient;
 
+    @MockitoBean
+    private PersonServiceClient personServiceClient;
+
     @Test
     @DisplayName("IT: Test successful auth flow: /registration -> 201, /me -> 200")
     void whenRegistrationAndGetMeWithValidToken_then200() {
         // given
         String email = EmailUtil.generateUniqueEmail();
-        UserRegistrationRequest request = UserRegistrationRequestUtil.build(email, PASSWORD);
+        IndividualCreateRequest request = IndividualCreateRequestUtil.build(email, PASSWORD);
+        mockPersonServiceClient(email);
 
         // 1. Registration -> 201
         TokenResponse tokens = successfulRegistration(request);
@@ -103,7 +107,8 @@ class AuthFlowIntegrationTest {
     void whenRegisterWithExistingEmail_then409() {
         // given
         String email = EmailUtil.generateUniqueEmail();
-        UserRegistrationRequest request = UserRegistrationRequestUtil.build(email, PASSWORD);
+        IndividualCreateRequest request = IndividualCreateRequestUtil.build(email, PASSWORD);
+        mockPersonServiceClient(email);
 
         // 1. Registration -> 201
         successfulRegistration(request);
@@ -127,7 +132,8 @@ class AuthFlowIntegrationTest {
     void whenRegistrationAndLoginWithValidEmail_then200() {
         // given
         String email = EmailUtil.generateUniqueEmail();
-        UserRegistrationRequest request = UserRegistrationRequestUtil.build(email, PASSWORD);
+        IndividualCreateRequest request = IndividualCreateRequestUtil.build(email, PASSWORD);
+        mockPersonServiceClient(email);
 
         // 1. Registration -> 201
         successfulRegistration(request);
@@ -154,7 +160,8 @@ class AuthFlowIntegrationTest {
     void whenRegistrationAndCorrectRefreshToken_then200() {
         // given
         String email = EmailUtil.generateUniqueEmail();
-        UserRegistrationRequest request = UserRegistrationRequestUtil.build(email, PASSWORD);
+        IndividualCreateRequest request = IndividualCreateRequestUtil.build(email, PASSWORD);
+        mockPersonServiceClient(email);
 
         // 1. Registration -> 201
         TokenResponse tokens = successfulRegistration(request);
@@ -223,7 +230,7 @@ class AuthFlowIntegrationTest {
     void whenRegisterWithMalformedEmail_then400() {
         // given
         String email = "malformed.email.here";
-        UserRegistrationRequest request = UserRegistrationRequestUtil.build(email, PASSWORD);
+        IndividualCreateRequest request = IndividualCreateRequestUtil.build(email, PASSWORD);
 
         // 1. Registration -> 400
         webTestClient.post()
@@ -245,7 +252,7 @@ class AuthFlowIntegrationTest {
         // given
         String email = EmailUtil.generateUniqueEmail();
         String incorrectConfirmPassword = "incorrect.confirmation.here";
-        UserRegistrationRequest request = UserRegistrationRequestUtil.build(email, PASSWORD, incorrectConfirmPassword);
+        IndividualCreateRequest request = IndividualCreateRequestUtil.build(email, PASSWORD, incorrectConfirmPassword);
 
         // 1. Registration -> 400
         webTestClient.post()
@@ -261,7 +268,7 @@ class AuthFlowIntegrationTest {
             });
     }
 
-    private TokenResponse successfulRegistration(UserRegistrationRequest request) {
+    private TokenResponse successfulRegistration(IndividualCreateRequest request) {
         TokenResponse tokens = webTestClient.post()
             .uri("/api/v1/auth/registration")
             .bodyValue(request)
@@ -276,5 +283,12 @@ class AuthFlowIntegrationTest {
         assertThat(tokens.getAccessToken()).isNotBlank();
 
         return tokens;
+    }
+
+    private void mockPersonServiceClient(String email) {
+        UserRegistrationRequest userRegistrationRequest = UserRegistrationRequestUtil.build(email, PASSWORD);
+
+        when(personServiceClient.createIndividual(any(IndividualCreateRequest.class)))
+            .thenReturn(Mono.just(userRegistrationRequest));
     }
 }
