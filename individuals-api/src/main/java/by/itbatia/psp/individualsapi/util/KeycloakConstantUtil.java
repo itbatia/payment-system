@@ -25,4 +25,7 @@ public class KeycloakConstantUtil {
 
     public static final String REFRESH_TOKEN = "refresh_token";
     public static final String BEARER_PREFIX = "Bearer ";
+
+    public static final String USER_ID_KC_ATTRIBUTE = "personServiceUserId";
+    public static final String EMAIL_CLAIM = "email";
 }

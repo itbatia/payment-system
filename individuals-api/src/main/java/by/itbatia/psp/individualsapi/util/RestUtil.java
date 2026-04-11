@@ -5,7 +5,13 @@ import java.util.List;
 import by.itbatia.psp.individualsapi.dto.UserInfoResponse;
 import by.itbatia.psp.individualsapi.security.JwtGrantedAuthoritiesConverter;
 import lombok.experimental.UtilityClass;
+import org.springframework.security.core.context.ReactiveSecurityContextHolder;
+import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
+import reactor.core.publisher.Mono;
+
+import static by.itbatia.psp.individualsapi.util.KeycloakConstantUtil.EMAIL_CLAIM;
 
 /**
  * @author Batsian_SV
@@ -34,12 +40,25 @@ public class RestUtil {
      *   "scope": "profile email",
      *   "email_verified": true,
      *   "preferred_username": "test@mail.ru",
-     *   "email": "test@mail.ru"
+     *   "person_service_user_id": "e32d6d15-e0ad-4f02-8a1b-e80660c69cb8",
+     *   "email": "john.doe@example.com"
      * }
      * }</pre>
      */
     public static void enrichWithRoles(UserInfoResponse userInfoResponse, Jwt principal) {
         List<String> roles = JwtGrantedAuthoritiesConverter.extractRoles(principal);
         userInfoResponse.setRoles(roles);
+    }
+
+    public static Mono<String> getPrincipalUserEmail() {
+        return getPrincipal()
+            .map(jwt -> jwt.getClaimAsString(EMAIL_CLAIM));
+    }
+
+    public static Mono<Jwt> getPrincipal() {
+        return ReactiveSecurityContextHolder.getContext()
+            .mapNotNull(SecurityContext::getAuthentication)
+            .cast(JwtAuthenticationToken.class)
+            .map(JwtAuthenticationToken::getToken);
     }
 }

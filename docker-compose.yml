@@ -55,6 +55,8 @@ services:
       KC_CONNECTION_TIMEOUT: 5000                         # Timeout (in millis) for HTTP connections to the Keycloak server.
       KC_ADMIN_TOKEN_CACHING_TIME_IN_SEC: 290             # Admin token caching time. Must be less than the actual expires_in (expires_in = 300).
       EXPORT_METRICS_ENABLED: true                        # Enable/disable export metrics by Prometheus.
+      PERSON_SERVICE_BASE_URL: http://person-service:8083 # Base URL of the Person service.
+      PERSON_SERVICE_CONNECTION_TIMEOUT: 5000             # Timeout (in millis) for HTTP connections to the Person service.
     depends_on:
       keycloak:
         condition: service_healthy

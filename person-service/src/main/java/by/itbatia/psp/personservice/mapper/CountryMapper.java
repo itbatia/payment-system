@@ -1,6 +1,6 @@
 package by.itbatia.psp.personservice.mapper;
 
-import by.itbatia.psp.common.dto.internal.CountryResponse;
+import by.itbatia.psp.common.dto.CountryResponse;
 import by.itbatia.psp.personservice.entity.CountryEntity;
 import org.mapstruct.Mapper;
 import org.mapstruct.MappingConstants;

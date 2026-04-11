@@ -45,29 +45,7 @@ paths:
       tags:
         - Individuals
       requestBody:
-        description: Individual creation request
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/IndividualCreateRequest'
-            examples:
-              ValidIndividualsCreation:
-                summary: Example of a valid individuals creation
-                value:
-                  passport_number: "AB1234567"
-                  phone_number: "+375291234567"
-                  user:
-                    email: "john.doe@example.com"
-                    first_name: "John"
-                    last_name: "Doe"
-                    address:
-                      country_id: 1
-                      address: "Nezavisimosti Ave, 100"
-                      zip_code: "220030"
-                      city: "Minsk"
-                      state: "Minsk Region"
-
+        $ref: '#/components/requestBodies/IndividualCreateRequestBody'
       responses:
         '201':
           $ref: '#/components/responses/SuccessfulIndividualResponse'
@@ -96,31 +74,7 @@ paths:
       tags:
         - Individuals
       requestBody:
-        description: Individual update request (partial update supported)
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/IndividualUpdateRequest'
-            examples:
-              UpdateExample:
-                summary: Update individual data
-                value:
-                  id: "a1b2c3d4-e5f6-7890-g1h2-i3j4k5l6m7n8"
-                  passport_number: "AB1234567"
-                  phone_number: "+375291234567"
-                  user:
-                    id: "5fb63fc0-a7bc-45e7-973c-b7f99758f926"
-                    email: "john.doe@example.com"
-                    first_name: "John"
-                    last_name: "Doe"
-                    address:
-                      country_id: 1
-                      address: "Nezavisimosti Ave, 100"
-                      zip_code: "220030"
-                      city: "Minsk"
-                      state: "Minsk Region"
-
+        $ref: '#/components/requestBodies/IndividualUpdateRequestBody'
       responses:
         '200':
           $ref: '#/components/responses/SuccessfulIndividualResponse'
@@ -208,34 +162,34 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
+    ###################################################################################################
+    ##########################     components: schemas: Create Requests     ###########################
+    ###################################################################################################
+
 components:
   schemas:
 
-    ###################################################################################################
-    ################################     schemas: Create Requests     #################################
-    ###################################################################################################
-
     IndividualCreateRequest:
       type: object
-      required: [ passport_number, phone_number, user ]
+      required: [ user ]
       properties:
         passport_number:
           type: string
           maxLength: 32
-          nullable: false
+          nullable: true
           description: Passport number (optional)
         phone_number:
           type: string
           maxLength: 32
           pattern: "^\\+?[1-9]\\d{1,14}$"
-          nullable: false
+          nullable: true
           description: Phone number in international format (optional)
         user:
           $ref: '#/components/schemas/UserCreateRequest'
 
     UserCreateRequest:
       type: object
-      required: [ email ]
+      required: [ email, password, confirm_password ]
       properties:
         secret_key:
           type: string
@@ -250,6 +204,16 @@ components:
           maxLength: 1024
           nullable: false
           description: Unique email address
+        password:
+          type: string
+          minLength: 8
+          maxLength: 100
+          nullable: false
+        confirm_password:
+          type: string
+          minLength: 8
+          maxLength: 100
+          nullable: false
         first_name:
           type: string
           minLength: 2
@@ -300,7 +264,7 @@ components:
           description: State or region (optional)
 
     ####################################################################################################
-    #################################     schemas: Update Requests     #################################
+    ###########################     components: schemas: Update Requests     ###########################
     ####################################################################################################
 
     IndividualUpdateRequest:
@@ -403,11 +367,12 @@ components:
           description: State or region (optional)
 
     ####################################################################################################
-    ####################################     schemas: Responses     ####################################
+    ##############################     components: schemas: Responses     ##############################
     ####################################################################################################
 
     IndividualResponse:
       type: object
+      required: [ id, user ]
       properties:
         id:
           type: string
@@ -424,6 +389,7 @@ components:
 
     UserResponse:
       type: object
+      required: [ id, email, filled ]
       properties:
         id:
           type: string
@@ -450,6 +416,7 @@ components:
 
     AddressResponse:
       type: object
+      required: [ id, country ]
       properties:
         id:
           type: string
@@ -472,6 +439,7 @@ components:
 
     CountryResponse:
       type: object
+      required: [ id, name, alpha2, alpha3 ]
       properties:
         id:
           type: integer
@@ -499,7 +467,7 @@ components:
           description: HTTP status code
 
     #################################################################################################
-    ##################################     responses: Examples     ##################################
+    ############################     components: responses: Examples     ############################
     #################################################################################################
 
   responses:
@@ -577,3 +545,68 @@ components:
                       name: "Belarus"
                       alpha2: "BY"
                       alpha3: "BLR"
+
+    #################################################################################################
+    ###############################     components: requestBodies     ###############################
+    #################################################################################################
+
+  requestBodies:
+
+    IndividualCreateRequestBody:
+      description: Individual creation request
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/IndividualCreateRequest'
+          examples:
+            ValidIndividualCreation:
+              summary: Example of a valid individuals creation
+              description: |
+                **Field requirements:**
+                - `email`: valid email format (e.g., user@example.com)
+                - `password`: at least 8 characters, including uppercase, lowercase, and digits
+                - `confirm_password`: must exactly match `password`
+              value:
+                passport_number: "AB1234567"
+                phone_number: "+375291234567"
+                user:
+                  email: "john.doe@example.com"
+                  password: "SecurePass123!"
+                  confirm_password: "SecurePass123!"
+                  first_name: "John"
+                  last_name: "Doe"
+                  address:
+                    country_id: 1
+                    address: "Nezavisimosti Ave, 100"
+                    zip_code: "220030"
+                    city: "Minsk"
+                    state: "Minsk Region"
+
+    IndividualUpdateRequestBody:
+      description: Individual update request (partial update supported)
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/IndividualUpdateRequest'
+          examples:
+            UpdateExample:
+              summary: Update individual data
+              value:
+                id: "a1b2c3d4-e5f6-7890-g1h2-i3j4k5l6m7n8"
+                passport_number: "AB1234567"
+                phone_number: "+375291234567"
+                user:
+                  id: "5fb63fc0-a7bc-45e7-973c-b7f99758f926"
+                  email: "john.doe@example.com"
+                  password: "SecurePass123!"
+                  confirm_password: "SecurePass123!"
+                  first_name: "John"
+                  last_name: "Doe"
+                  address:
+                    country_id: 1
+                    address: "Nezavisimosti Ave, 100"
+                    zip_code: "220030"
+                    city: "Minsk"
+                    state: "Minsk Region"

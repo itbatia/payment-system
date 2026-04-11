@@ -34,7 +34,8 @@ public class UserServiceImpl implements UserService {
     @Override
     public Mono<@NonNull TokenResponse> register(UserRegistrationRequest request) {
         Timer.Sample sample = metricsService.startTimer();
-        return keycloakClient.createUser(request.getEmail(), request.getPassword())
+
+        return keycloakClient.createUser(request)
             .then(tokenService.login(request.getEmail(), request.getPassword()))
             .doOnSuccess(_ -> {
                 metricsService.incrementSuccessfulRegistration();

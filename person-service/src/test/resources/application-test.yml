@@ -7,9 +7,31 @@ server:
 # ==================================================================================================================== #
 # APPLICATION config                                                                                                   #
 # ==================================================================================================================== #
-
+spring:
+  datasource:
+    username: test
+    password: test
+    url: jdbc:tc:postgresql:16://localhost:5432/test
+  jpa:
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: false
+      jdbc:
+        time_zone: Europe/Minsk
+  flyway:
+    enabled: true
+    url: ${spring.datasource.url}
+    user: ${spring.datasource.username}
+    password: ${spring.datasource.password}
+    locations: classpath:db/migration
 
 # ==================================================================================================================== #
 # METRICS config                                                                                                       #
 # ==================================================================================================================== #
-
+management:
+  prometheus:
+    metrics:
+      export:
+        enabled: false

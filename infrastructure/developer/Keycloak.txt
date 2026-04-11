@@ -416,5 +416,62 @@ curl -X POST http://localhost:8080/realms/individuals/protocol/openid-connect/to
   "scope": "profile offline_access email"
 }
 
+========================================================================================================================
 
+Keycloak игнорирует необъявленные атрибуты в режиме "User Profile Enabled" (Realm Settings → User Profile → Enabled = ON)
+Keycloak принимает только те атрибуты, которые явно объявлены в профиле пользователя. Любые "лишние" атрибуты игнорируются при создании/обновлении.
 
+✅ Шаг 21: добавить атрибут в User Profile
+1) Зайти в админку Keycloak → свой Realm → Realm Settings → User Profile → Create attribute.
+2) Заполните:
+    Name: personServiceUserId
+    Display name: Person Service User ID
+    Enabled when: Always (есть ещё Scopes are requested)
+    Required field: ❌ Нет
+    Permissions → View: admin + user, Edit: admin + user
+3) Create.
+
+✅ Шаг 22: Настройте Protocol Mapper в Keycloak для добавления Claim в Token
+1) Зайти в админку Keycloak → свой Realm → Clients → выбрать клиент individuals-api -> Client scopes -> выбрать scope individuals-api-dedicated.
+2) выбрать Add mapper -> By configuration (Configure a new mapper) -> User Attribute
+3) Заполнить:
+    Mapper Type: User Attribute
+    Name: person-service user id
+    User Attribute: personServiceUserId
+    Token Claim Name: person_service_user_id
+    Claim JSON Type: String
+    Add to access token:       ✅ Включено
+    Add to ID token:           ✅ (опционально)
+    Add to userinfo            ✅ Было включено, не убирал
+    Add to token introspection ✅ Было включено, не убирал
+4) Сохранить.
+Теперь при логине токен будет содержать:
+{
+  "person_service_user_id": "a785f756-5379-4559-9477-6f32c928a224",
+  ...
+}
+
+✅ Шаг 23: Проверяем содержимое access_token:
+{
+  "exp": 1775921291,
+  "iat": 1775920991,
+  "jti": "onrtro:63713716-725f-697f-4df3-8b707e701dc9",
+  "iss": "http://localhost:8080/realms/individuals",
+  "sub": "e35b976b-9488-4d37-976e-f37234aab0c4",
+  "typ": "Bearer",
+  "azp": "individuals-api",
+  "sid": "bkXZe2RnlBgS3FVZtTuLgtye",
+  "realm_access": {
+    "roles": [
+      "default-roles-individuals",
+      "user"
+    ]
+  },
+  "scope": "profile email",
+  "email_verified": true,
+  "preferred_username": "john.doe1@example.com",
+  "person_service_user_id": "71ad4d7d-9d57-43f3-8c6f-9ca3adb2e4d6",
+  "email": "john.doe1@example.com"
+}
+
+========================================================================================================================

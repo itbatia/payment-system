@@ -14,11 +14,14 @@ logging:
 individuals-api:
   keycloak:
     realm: individuals
-    base-url: http://localhost:8080
+    base-url: mock
     client-id: individuals-api
     client-secret: test-secret
     connection-timeout: 5000
     admin-token-caching-time-in-sec: 290
+  person-service-client:
+    base-url: mock
+    connection-timeout: 5000
 
 # ==================================================================================================================== #
 # METRICS config                                                                                                       #
