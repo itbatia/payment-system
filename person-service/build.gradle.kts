@@ -88,11 +88,12 @@ dependencies {
     implementation("net.logstash.logback:logstash-logback-encoder:${project.property("logstashLogbackEncoderVersion")}")
 
     // Tests
-    testImplementation("org.springframework.boot:spring-boot-starter-test")
-    testImplementation("org.springframework.boot:spring-boot-testcontainers")
-    testImplementation("org.testcontainers:postgresql")
-    testImplementation("org.testcontainers:junit-jupiter")
-    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+    testImplementation("org.springframework.boot:spring-boot-starter-jdbc-test")   // @DataJpaTest
+    implementation("org.springframework.boot:spring-boot-data-jpa-test")           // @AutoConfigureTestDatabase
+    testImplementation("org.testcontainers:testcontainers-junit-jupiter")          // @Testcontainers
+    testImplementation("org.springframework.boot:spring-boot-starter-webmvc-test") // @AutoConfigureMockMvc
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")                  // Assertions
+    testImplementation("org.testcontainers:postgresql:${project.property("testcontainersPostgresqlVersion")}")
 
     testCompileOnly("org.projectlombok:lombok:${project.property("lombokVersion")}")
     testAnnotationProcessor("org.projectlombok:lombok:${project.property("lombokVersion")}")
@@ -118,7 +119,7 @@ tasks.named("processResources") {
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//////                                          Генерация DTO из OpenAPI                                          //////
+//////                                       Генерация DTO и API из OpenAPI                                       //////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 tasks.register<org.openapitools.generator.gradle.plugin.tasks.GenerateTask>("generateCommonDto") {
@@ -130,6 +131,7 @@ tasks.register<org.openapitools.generator.gradle.plugin.tasks.GenerateTask>("gen
     globalProperties.set(
         mapOf(
             "models" to "",                          // ← включить генерацию DTO (""=all)
+            "apis" to "false",                       // ← НЕ генерировать API-интерфейсы
             "supportingFiles" to "false"             // ← не включить генерацию Utils (-ApiUtil)
         )
     )
