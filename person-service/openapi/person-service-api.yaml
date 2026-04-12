@@ -269,23 +269,23 @@ components:
 
     IndividualUpdateRequest:
       type: object
-      required: [ id, passport_number, phone_number, user ]
+      required: [ id, user ]
       properties:
         id:
           type: string
           format: uuid
-          nullable: false
+          nullable: true
           description: Unique individual identifier (UUID)
         passport_number:
           type: string
           maxLength: 32
-          nullable: false
+          nullable: true
           description: Passport number (optional)
         phone_number:
           type: string
           maxLength: 32
           pattern: "^\\+?[1-9]\\d{1,14}$"
-          nullable: false
+          nullable: true
           description: Phone number in international format (optional)
         user:
           $ref: '#/components/schemas/UserUpdateRequest'
