@@ -290,5 +290,8 @@ class AuthFlowIntegrationTest {
 
         when(personServiceClient.createIndividual(any(IndividualCreateRequest.class)))
             .thenReturn(Mono.just(userRegistrationRequest));
+
+        when(personServiceClient.deleteIndividual(any()))
+            .thenReturn(Mono.empty());
     }
 }
