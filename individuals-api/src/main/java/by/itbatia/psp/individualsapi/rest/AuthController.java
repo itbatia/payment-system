@@ -7,6 +7,7 @@ import by.itbatia.psp.individualsapi.dto.TokenRefreshRequest;
 import by.itbatia.psp.individualsapi.dto.TokenResponse;
 import by.itbatia.psp.individualsapi.dto.UserInfoResponse;
 import by.itbatia.psp.individualsapi.dto.UserLoginRequest;
+import by.itbatia.psp.individualsapi.service.PersonService;
 import by.itbatia.psp.individualsapi.service.RestValidationService;
 import by.itbatia.psp.individualsapi.service.TokenService;
 import by.itbatia.psp.individualsapi.service.UserService;
@@ -31,6 +32,7 @@ public class AuthController implements AuthApi {
 
     private final UserService userService;
     private final TokenService tokenService;
+    private final PersonService personService;
     private final PersonServiceClient personServiceClient;
     private final RestValidationService restValidationService;
 
@@ -39,7 +41,7 @@ public class AuthController implements AuthApi {
         return request
             .doOnNext(restValidationService::validate)
             .flatMap(personServiceClient::createIndividual)
-            .flatMap(userService::register)
+            .flatMap(personService::registerWithFallback)
             .map(tokenResponse -> ResponseEntity.status(HttpStatus.CREATED).body(tokenResponse));
     }
 

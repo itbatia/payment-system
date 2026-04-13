@@ -5,6 +5,7 @@ import by.itbatia.psp.common.dto.IndividualUpdateRequest;
 import by.itbatia.psp.individualsapi.api.IndividualsApi;
 import by.itbatia.psp.individualsapi.client.PersonServiceClient;
 import by.itbatia.psp.individualsapi.util.RestUtil;
+import by.itbatia.psp.individualsapi.util.ThreadUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -28,6 +29,7 @@ public class IndividualController implements IndividualsApi {
     @Override
     @PreAuthorize("hasRole('USER')")
     public Mono<ResponseEntity<IndividualResponse>> getById(UUID id, ServerWebExchange exchange) {
+        ThreadUtil.setThreadName(id);
         return personServiceClient.getIndividualById(id)
             .map(ResponseEntity::ok);
     }
@@ -35,6 +37,7 @@ public class IndividualController implements IndividualsApi {
     @Override
     public Mono<ResponseEntity<IndividualResponse>> getByEmail(ServerWebExchange exchange) {
         return RestUtil.getPrincipalUserEmail()
+            .doOnNext(ThreadUtil::setThreadName)
             .flatMap(personServiceClient::getIndividualByUserEmail)
             .map(ResponseEntity::ok);
     }
@@ -43,6 +46,7 @@ public class IndividualController implements IndividualsApi {
     @PreAuthorize("hasRole('USER')")
     public Mono<ResponseEntity<IndividualResponse>> update(Mono<IndividualUpdateRequest> request, ServerWebExchange exchange) {
         return request
+            .doOnNext(ThreadUtil::setThreadName)
             .flatMap(personServiceClient::updateIndividual)
             .map(ResponseEntity::ok);
     }
@@ -50,7 +54,8 @@ public class IndividualController implements IndividualsApi {
     @Override
     @PreAuthorize("hasRole('USER')")
     public Mono<ResponseEntity<Void>> delete(UUID id, ServerWebExchange exchange) {
+        ThreadUtil.setThreadName(id);
         return personServiceClient.deleteIndividual(id)
-            .map(_ -> ResponseEntity.noContent().build());
+            .then(Mono.fromCallable(() -> ResponseEntity.noContent().build()));
     }
 }

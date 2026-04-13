@@ -12,6 +12,7 @@ import lombok.Data;
 @Builder
 public class UserRegistrationRequest {
 
+    private UUID individualId;
     private UUID userId;
     private String email;
     private String password;

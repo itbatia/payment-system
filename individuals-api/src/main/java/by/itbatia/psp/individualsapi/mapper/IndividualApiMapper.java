@@ -23,6 +23,7 @@ public interface IndividualApiMapper {
     @Named("toUserRegistrationRequest")
     default UserRegistrationRequest toUserRegistrationRequest(IndividualCreateRequest request, IndividualResponse response) {
         return UserRegistrationRequest.builder()
+            .individualId(response.getId())
             .userId(response.getUser().getId())
             .email(request.getUser().getEmail())
             .password(request.getUser().getPassword())
