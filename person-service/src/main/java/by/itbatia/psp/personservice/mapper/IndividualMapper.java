@@ -32,13 +32,13 @@ public interface IndividualMapper {
     @Mapping(target = "updatedAt", ignore = true)
     IndividualEntity toIndividualEntity(IndividualCreateRequest request);
 
-    @Named("updateIndividualFromRequest")
+    @Named("enrichIndividualFromRequest")
     @Mapping(target = "id", ignore = true)
-    @Mapping(target = "user", source = "user", qualifiedByName = "updateUserFromRequest")
+    @Mapping(target = "user", source = "user", qualifiedByName = "enrichUserFromRequest")
     @Mapping(target = "status", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
-    void updateIndividualFromRequest(IndividualUpdateRequest request, @MappingTarget IndividualEntity existingEntity);
+    void enrichIndividualFromRequest(IndividualUpdateRequest request, @MappingTarget IndividualEntity existingEntity);
 
     @Named("toIndividualResponse")
     @Mapping(target = "user", source = "user", qualifiedByName = "toUserResponse")

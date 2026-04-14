@@ -24,6 +24,9 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
+import org.hibernate.envers.Audited;
+import org.hibernate.envers.NotAudited;
+import org.hibernate.envers.RelationTargetAuditMode;
 import org.springframework.data.domain.Persistable;
 
 /**
@@ -35,6 +38,7 @@ import org.springframework.data.domain.Persistable;
 @Builder(toBuilder = true)
 @Entity
 @Table(schema = "person", name = "countries")
+@Audited(targetAuditMode = RelationTargetAuditMode.AUDITED)
 public class CountryEntity implements Persistable<Long> {
 
     @Id
@@ -55,6 +59,7 @@ public class CountryEntity implements Persistable<Long> {
     @Column(name = "status")
     private Status status;
 
+    @NotAudited
     @Column(name = "created_at")
     private OffsetDateTime createdAt;
 

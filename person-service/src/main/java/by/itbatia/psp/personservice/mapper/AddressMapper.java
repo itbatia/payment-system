@@ -42,14 +42,14 @@ public interface AddressMapper {
     @Mapping(target = "user", ignore = true)
     AddressEntity toAddressEntity(AddressUpdateRequest request);
 
-    @Named("updateAddressFromRequest")
+    @Named("enrichAddressFromRequest")
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "country", ignore = true)
     @Mapping(target = "archivedAt", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     @Mapping(target = "user", ignore = true)
-    void updateAddressFromRequest(AddressUpdateRequest request, @MappingTarget AddressEntity existingAddress);
+    void enrichAddressFromRequest(AddressUpdateRequest request, @MappingTarget AddressEntity existingAddress);
 
     @Named("toAddressResponse")
     @Mapping(target = "country", source = "country", qualifiedByName = "toCountryResponse")

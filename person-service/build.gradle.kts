@@ -62,16 +62,14 @@ dependencies {
     // Openapi
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:${project.property("springdocOpenapiStarterWebmvcUiVersion")}")
 
-    // DB stack:
-    // JPA + PostgreSQL + Flyway + Hibernate Envers (аудит)
+    // DB stack: JPA + PostgreSQL + Flyway + Hibernate Envers (аудит)
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     runtimeOnly("org.postgresql:postgresql")
     implementation("org.springframework.boot:spring-boot-starter-flyway")
-    runtimeOnly ("org.flywaydb:flyway-database-postgresql")
-//    implementation("org.hibernate.com:hibernate-envers")
+    runtimeOnly("org.flywaydb:flyway-database-postgresql")
+    implementation("org.hibernate:hibernate-envers:${project.property("hibernateEnversVersion")}")
 
-    // Observer stack:
-    // Metrics + OpenTelemetry (трассировка)
+    // Observer stack: Metrics + OpenTelemetry (трассировка)
     implementation("org.springframework.boot:spring-boot-starter-actuator")
     runtimeOnly("io.micrometer:micrometer-registry-prometheus:${project.property("micrometerRegistryPrometheusVersion")}")
 //    implementation("io.opentelemetry.instrumentation:opentelemetry-spring-boot-starter:${project.property("opentelemetrySpringBootStarterVersion")}")
@@ -99,7 +97,7 @@ dependencies {
     testAnnotationProcessor("org.projectlombok:lombok:${project.property("lombokVersion")}")
 
     // PSP projects
-     implementation(project(":common")) // from local
+    implementation(project(":common")) // from local
 //    implementation("by.itbatia.psp:common:${project.property("commonVersion")}") // from Nexus
 }
 

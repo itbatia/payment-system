@@ -115,7 +115,7 @@ public class IndividualServiceImpl implements IndividualService {
     public IndividualResponse update(IndividualUpdateRequest request) throws NotFoundApiException, UniqueConstraintViolationApiException {
         try {
             IndividualEntity existingIndividual = findById(request.getId());
-            updateExistingIndividual(existingIndividual, request);
+            enrichExistingIndividual(existingIndividual, request);
 
             existingIndividual.getUser().enrichFilled();
             IndividualEntity updatedIndividual = individualRepository.save(existingIndividual);
@@ -129,8 +129,8 @@ public class IndividualServiceImpl implements IndividualService {
         }
     }
 
-    private void updateExistingIndividual(IndividualEntity existingIndividual, IndividualUpdateRequest request) throws NotFoundApiException {
-        individualMapper.updateIndividualFromRequest(request, existingIndividual);
+    private void enrichExistingIndividual(IndividualEntity existingIndividual, IndividualUpdateRequest request) throws NotFoundApiException {
+        individualMapper.enrichIndividualFromRequest(request, existingIndividual);
         updateExistingUserWithAddress(existingIndividual, request.getUser().getAddress());
     }
 
@@ -160,7 +160,7 @@ public class IndividualServiceImpl implements IndividualService {
             CountryEntity countryEntity = countryService.getById(requestAddress.getCountryId());
             existingAddress.setCountry(countryEntity);
         }
-        addressMapper.updateAddressFromRequest(requestAddress, existingAddress);
+        addressMapper.enrichAddressFromRequest(requestAddress, existingAddress);
     }
 
     //-//-//-//-// -----------------------------------------------   delete   ----------------------------------------------- //-//-//-//-//
@@ -175,14 +175,13 @@ public class IndividualServiceImpl implements IndividualService {
         }
 
         AddressEntity address = individual.getUser().getAddress();
-
         if (address != null) {
             address.setArchivedAt(OffsetDateTime.now());
         }
 
         individual.setStatus(Status.DELETED);
-        individualRepository.save(individual);
 
+        individualRepository.save(individual);
         log.info("Individual [id={}] deleted", id);
     }
 }

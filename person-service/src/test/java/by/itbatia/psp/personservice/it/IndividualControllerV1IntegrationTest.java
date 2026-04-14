@@ -7,12 +7,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 
 import by.itbatia.psp.common.dto.IndividualCreateRequest;
 import by.itbatia.psp.common.dto.IndividualUpdateRequest;
 import by.itbatia.psp.personservice.Application;
+import by.itbatia.psp.personservice.common.MockMvcHelper;
+import by.itbatia.psp.personservice.common.TestContainersSupport;
 import by.itbatia.psp.personservice.entity.CountryEntity;
 import by.itbatia.psp.personservice.entity.IndividualEntity;
 import by.itbatia.psp.personservice.enums.Status;
@@ -30,14 +31,11 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
-import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
-import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.result.MockMvcResultHandlers;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
-import tools.jackson.databind.ObjectMapper;
 
 /**
  * @author Batsian_SV
@@ -50,26 +48,17 @@ import tools.jackson.databind.ObjectMapper;
 public class IndividualControllerV1IntegrationTest {
 
     @Container
-    private static final PostgreSQLContainer<?> POSTGRES_CONTAINER = new PostgreSQLContainer<>("postgres:17")
-        .withDatabaseName("test")
-        .withUsername("test")
-        .withPassword("test");
+    private static final PostgreSQLContainer<?> POSTGRES_CONTAINER = TestContainersSupport.createPostgresContainer();
+
     @DynamicPropertySource
     private static void configureProperties(DynamicPropertyRegistry registry) {
-        registry.add("spring.datasource.url", POSTGRES_CONTAINER::getJdbcUrl);
-        registry.add("spring.datasource.username", POSTGRES_CONTAINER::getUsername);
-        registry.add("spring.datasource.password", POSTGRES_CONTAINER::getPassword);
+        TestContainersSupport.configurePostgresProperties(registry, POSTGRES_CONTAINER);
     }
 
     @Autowired
-    private MockMvc mockMvc;
-
-    @Autowired
-    private ObjectMapper objectMapper;
-
+    private MockMvcHelper mockMvc;
     @Autowired
     private CountryRepository countryRepository;
-
     @Autowired
     private IndividualRepository individualRepository;
 
@@ -86,10 +75,10 @@ public class IndividualControllerV1IntegrationTest {
         long countryId = 1;
 
         CountryEntity country = countryRepository.findById(countryId).orElseThrow();
-        IndividualCreateRequest request = IndividualUtils.buildValidIndividualCreateRequest(passportNumber, email, countryId);
+        IndividualCreateRequest request = IndividualUtils.buildIndividualCreateRequest(passportNumber, email, countryId);
 
         // when
-        ResultActions result = performCreating(request);
+        ResultActions result = mockMvc.performCreating(request);
 
         // then
         result
@@ -111,12 +100,12 @@ public class IndividualControllerV1IntegrationTest {
     @DisplayName("POST /api/v1/individuals: дублирующий email → 409 Conflict")
     void givenDuplicateEmail_whenCreate_thenReturns409() throws Exception {
         // given
-        IndividualCreateRequest request = IndividualUtils.buildValidIndividualCreateRequest();
+        IndividualCreateRequest request = IndividualUtils.buildIndividualCreateRequest();
 
-        ResultActions result1 = performCreating(request);
+        ResultActions result1 = mockMvc.performCreating(request);
 
         // when (повторная регистрация с тем же email)
-        ResultActions result2 = performCreating(request);
+        ResultActions result2 = mockMvc.performCreating(request);
 
         // then
         result1
@@ -134,10 +123,10 @@ public class IndividualControllerV1IntegrationTest {
     void givenInvalidEmail_whenCreate_thenReturns400() throws Exception {
         // given
         String invalidEmail = "invalid-email";
-        IndividualCreateRequest request = IndividualUtils.buildValidIndividualCreateRequest(invalidEmail);
+        IndividualCreateRequest request = IndividualUtils.buildIndividualCreateRequest(invalidEmail);
 
         // when
-        ResultActions result = performCreating(request);
+        ResultActions result = mockMvc.performCreating(request);
 
         // then
         result
@@ -152,10 +141,10 @@ public class IndividualControllerV1IntegrationTest {
     void givenNonExistingCountryId_whenCreate_thenReturns404() throws Exception {
         // given
         long notExistingCountryId = 99999L;
-        IndividualCreateRequest request = IndividualUtils.buildValidIndividualCreateRequest(notExistingCountryId);
+        IndividualCreateRequest request = IndividualUtils.buildIndividualCreateRequest(notExistingCountryId);
 
         // when
-        ResultActions result = performCreating(request);
+        ResultActions result = mockMvc.performCreating(request);
 
         // then
         String errorMsg = String.format("Country by [id=%d] not found", notExistingCountryId);
@@ -175,8 +164,8 @@ public class IndividualControllerV1IntegrationTest {
     @DisplayName("GET /api/v1/individuals/{id}: существующий ID → 200")
     void givenExistingId_whenGetById_thenReturns200() throws Exception {
         // given
-        IndividualCreateRequest request = IndividualUtils.buildValidIndividualCreateRequest();
-        ResultActions result1 = performCreating(request);
+        IndividualCreateRequest request = IndividualUtils.buildIndividualCreateRequest();
+        ResultActions result1 = mockMvc.performCreating(request);
 
         String content = result1
             .andExpect(status().isCreated())
@@ -185,7 +174,7 @@ public class IndividualControllerV1IntegrationTest {
         String id = JsonPath.read(content, "$.id");
 
         // when
-        ResultActions result2 = performGetById(id);
+        ResultActions result2 = mockMvc.performGetById(id);
 
         // then
         result2
@@ -200,13 +189,13 @@ public class IndividualControllerV1IntegrationTest {
     void givenExistingEmail_whenGetByEmail_thenReturns200() throws Exception {
         // given
         String email = "findme@example.com";
-        IndividualCreateRequest request = IndividualUtils.buildValidIndividualCreateRequest(email);
+        IndividualCreateRequest request = IndividualUtils.buildIndividualCreateRequest(email);
 
-        performCreating(request)
+        mockMvc.performCreating(request)
             .andExpect(status().isCreated());
 
         // when
-        ResultActions result = performGetByEmail(email);
+        ResultActions result = mockMvc.performGetByEmail(email);
 
         // then
         result
@@ -226,7 +215,7 @@ public class IndividualControllerV1IntegrationTest {
         UUID notExistingId = UUID.randomUUID();
 
         // when
-        ResultActions result = performGetById(notExistingId.toString());
+        ResultActions result = mockMvc.performGetById(notExistingId.toString());
 
         // then
         result
@@ -243,7 +232,7 @@ public class IndividualControllerV1IntegrationTest {
         String nonExistingEmail = EmailUtil.generateUniqueEmail();
 
         // when
-        ResultActions result = performGetByEmail(nonExistingEmail);
+        ResultActions result = mockMvc.performGetByEmail(nonExistingEmail);
 
         // then
         result
@@ -261,9 +250,9 @@ public class IndividualControllerV1IntegrationTest {
     @DisplayName("PUT /api/v1/individuals: успешное обновление → 200 + обновлённые данные")
     void givenExistingIndividual_whenUpdate_thenReturns200AndUpdatedData() throws Exception {
         // given
-        IndividualCreateRequest createRequest = IndividualUtils.buildValidIndividualCreateRequest();
+        IndividualCreateRequest createRequest = IndividualUtils.buildIndividualCreateRequest();
 
-        String createdContent = performCreating(createRequest)
+        String createdContent = mockMvc.performCreating(createRequest)
             .andExpect(status().isCreated())
             .andReturn().getResponse().getContentAsString();
 
@@ -276,12 +265,12 @@ public class IndividualControllerV1IntegrationTest {
         String firstName = "Jane";
         String lastName = "Smith";
 
-        IndividualUpdateRequest updateRequest = IndividualUtils.buildValidIndividualUpdateRequest(
+        IndividualUpdateRequest updateRequest = IndividualUtils.buildIndividualUpdateRequest(
             id, userId, passportNumber, firstName, lastName, originalEmail
         );
 
         // when
-        ResultActions result = performUpdating(updateRequest);
+        ResultActions result = mockMvc.performUpdating(updateRequest);
 
         // then
         result
@@ -302,10 +291,10 @@ public class IndividualControllerV1IntegrationTest {
     void givenNonExistingId_whenUpdate_thenReturns404() throws Exception {
         // given
         UUID notExistingId = UUID.randomUUID();
-        IndividualUpdateRequest updateRequest = IndividualUtils.buildValidIndividualUpdateRequest(notExistingId);
+        IndividualUpdateRequest updateRequest = IndividualUtils.buildIndividualUpdateRequest(notExistingId);
 
         // when
-        ResultActions result = performUpdating(updateRequest);
+        ResultActions result = mockMvc.performUpdating(updateRequest);
 
         // then
         result
@@ -323,13 +312,13 @@ public class IndividualControllerV1IntegrationTest {
         String otherEmail = "other@example.com";
 
         // Создаём первого пользователя
-        IndividualCreateRequest request1 = IndividualUtils.buildValidIndividualCreateRequest(sharedEmail);
-        performCreating(request1)
+        IndividualCreateRequest request1 = IndividualUtils.buildIndividualCreateRequest(sharedEmail);
+        mockMvc.performCreating(request1)
             .andExpect(status().isCreated());
 
         // Создаём второго пользователя
-        IndividualCreateRequest request2 = IndividualUtils.buildValidIndividualCreateRequest(otherEmail);
-        String individual2 = performCreating(request2)
+        IndividualCreateRequest request2 = IndividualUtils.buildIndividualCreateRequest(otherEmail);
+        String individual2 = mockMvc.performCreating(request2)
             .andExpect(status().isCreated())
             .andReturn().getResponse().getContentAsString();
 
@@ -338,8 +327,8 @@ public class IndividualControllerV1IntegrationTest {
 
 
         // when (пытаемся обновить второго пользователя, установив email первого)
-        IndividualUpdateRequest updateRequest = IndividualUtils.buildValidIndividualUpdateRequest(id2, userId2, sharedEmail);
-        ResultActions result = performUpdating(updateRequest);
+        IndividualUpdateRequest updateRequest = IndividualUtils.buildIndividualUpdateRequest(id2, userId2, sharedEmail);
+        ResultActions result = mockMvc.performUpdating(updateRequest);
 
         // then
         result
@@ -354,10 +343,10 @@ public class IndividualControllerV1IntegrationTest {
     void givenUpdateWithoutId_whenUpdate_thenReturns400() throws Exception {
         // given
         UUID individualId = null;
-        IndividualUpdateRequest updateRequest = IndividualUtils.buildValidIndividualUpdateRequest(individualId);
+        IndividualUpdateRequest updateRequest = IndividualUtils.buildIndividualUpdateRequest(individualId);
 
         // when
-        ResultActions result = performUpdating(updateRequest);
+        ResultActions result = mockMvc.performUpdating(updateRequest);
 
         // then
         result
@@ -375,15 +364,15 @@ public class IndividualControllerV1IntegrationTest {
     @DisplayName("DELETE /api/v1/individuals/{id}: успешное удаление → 204 No Content")
     void givenExistingIndividual_whenDelete_thenReturns204() throws Exception {
         // given
-        IndividualCreateRequest request = IndividualUtils.buildValidIndividualCreateRequest();
-        String individual = performCreating(request)
+        IndividualCreateRequest request = IndividualUtils.buildIndividualCreateRequest();
+        String individual = mockMvc.performCreating(request)
             .andExpect(status().isCreated())
             .andReturn().getResponse().getContentAsString();
 
         String id = JsonPath.read(individual, "$.id");
 
         // when
-        ResultActions result = performDeleting(id);
+        ResultActions result = mockMvc.performDeleting(id);
 
         // then
         result
@@ -405,7 +394,7 @@ public class IndividualControllerV1IntegrationTest {
         String notExistingId = UUID.randomUUID().toString();
 
         // when
-        ResultActions result = performDeleting(notExistingId);
+        ResultActions result = mockMvc.performDeleting(notExistingId);
 
         // then
         result
@@ -419,18 +408,18 @@ public class IndividualControllerV1IntegrationTest {
     @DisplayName("DELETE /api/v1/individuals/{id}: повторное удаление уже удалённого → 400 Bad Request")
     void givenAlreadyDeletedIndividual_whenDeleteAgain_thenReturns400() throws Exception {
         // given
-        IndividualCreateRequest request = IndividualUtils.buildValidIndividualCreateRequest();
+        IndividualCreateRequest request = IndividualUtils.buildIndividualCreateRequest();
 
-        String individual = performCreating(request)
+        String individual = mockMvc.performCreating(request)
             .andExpect(status().isCreated())
             .andReturn().getResponse().getContentAsString();
         String id = JsonPath.read(individual, "$.id");
 
         // Первое удаление
-        performDeleting(id);
+        mockMvc.performDeleting(id);
 
         // when (Повторное удаление)
-        ResultActions result = performDeleting(id);
+        ResultActions result = mockMvc.performDeleting(id);
 
         // then
         result
@@ -438,56 +427,5 @@ public class IndividualControllerV1IntegrationTest {
             .andExpect(status().isBadRequest())
             .andExpect(jsonPath("$.status").value(400))
             .andExpect(jsonPath("$.error").value(String.format("Individual [id=%s] has already been deleted", id)));
-    }
-
-    // ================================================================================================================================== //
-    //                                                           COMMON METHODS                                                           //
-    // ================================================================================================================================== //
-
-    private ResultActions performCreating(IndividualCreateRequest request) throws Exception {
-        return mockMvc.perform(
-            MockMvcRequestBuilders
-                .post("/api/v1/individuals")
-                .contentType(MediaType.APPLICATION_JSON)
-                .accept(MediaType.APPLICATION_JSON_VALUE)
-                .characterEncoding(StandardCharsets.UTF_8)
-                .content(objectMapper.writeValueAsString(request))
-        );
-    }
-
-    private ResultActions performGetById(String id) throws Exception {
-        return mockMvc.perform(
-            MockMvcRequestBuilders
-                .get("/api/v1/individuals/{id}", id)
-                .accept(MediaType.APPLICATION_JSON_VALUE)
-                .characterEncoding(StandardCharsets.UTF_8)
-        );
-    }
-
-    private ResultActions performGetByEmail(String email) throws Exception {
-        return mockMvc.perform(
-            MockMvcRequestBuilders
-                .get("/api/v1/individuals/email/{email}", email)
-                .accept(MediaType.APPLICATION_JSON_VALUE)
-                .characterEncoding(StandardCharsets.UTF_8)
-        );
-    }
-
-    private ResultActions performUpdating(IndividualUpdateRequest request) throws Exception {
-        return mockMvc.perform(
-            MockMvcRequestBuilders
-                .put("/api/v1/individuals")
-                .contentType(MediaType.APPLICATION_JSON)
-                .accept(MediaType.APPLICATION_JSON_VALUE)
-                .characterEncoding(StandardCharsets.UTF_8)
-                .content(objectMapper.writeValueAsString(request))
-        );
-    }
-
-    private ResultActions performDeleting(String id) throws Exception {
-        return mockMvc.perform(
-            MockMvcRequestBuilders
-                .delete("/api/v1/individuals/{id}", id)
-        );
     }
 }

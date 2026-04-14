@@ -31,21 +31,21 @@ public class IndividualUtils {
 
     //-//-//-//-// ------------------------------------------   Create requests   ------------------------------------------- //-//-//-//-//
 
-    public static IndividualCreateRequest buildValidIndividualCreateRequest() {
+    public static IndividualCreateRequest buildIndividualCreateRequest() {
         return buildRequest("AB1234567", EmailUtil.generateUniqueEmail(), 1);
     }
 
-    public static IndividualCreateRequest buildValidIndividualCreateRequest(long countryId) {
+    public static IndividualCreateRequest buildIndividualCreateRequest(long countryId) {
         return buildRequest("AB1234567", EmailUtil.generateUniqueEmail(), countryId);
     }
 
-    public static IndividualCreateRequest buildValidIndividualCreateRequest(String email) {
+    public static IndividualCreateRequest buildIndividualCreateRequest(String email) {
         return buildRequest("AB1234567", email, 1);
     }
 
-    public static IndividualCreateRequest buildValidIndividualCreateRequest(String passportNumber,
-                                                                            String email,
-                                                                            long countryId) {
+    public static IndividualCreateRequest buildIndividualCreateRequest(String passportNumber,
+                                                                       String email,
+                                                                       long countryId) {
         return buildRequest(passportNumber, email, countryId);
     }
 
@@ -75,29 +75,29 @@ public class IndividualUtils {
 
     //-//-//-//-// ------------------------------------------   Update requests   ------------------------------------------- //-//-//-//-//
 
-    public static IndividualUpdateRequest buildValidIndividualUpdateRequest(String id, String userId, String email) {
+    public static IndividualUpdateRequest buildIndividualUpdateRequest(String id, String userId, String email) {
         return buildRequest(UUID.fromString(id), UUID.fromString(userId), "AB1234567", "John", "Doe", email);
     }
 
-    public static IndividualUpdateRequest buildValidIndividualUpdateRequest(UUID id) {
+    public static IndividualUpdateRequest buildIndividualUpdateRequest(UUID id) {
         return buildRequest(id, UUID.randomUUID(), "AB1234567", "John", "Doe", EmailUtil.generateUniqueEmail());
     }
 
-    public static IndividualUpdateRequest buildValidIndividualUpdateRequest(String id,
-                                                                            String userId,
-                                                                            String passportNumber,
-                                                                            String firstName,
-                                                                            String lastName,
-                                                                            String email) {
+    public static IndividualUpdateRequest buildIndividualUpdateRequest(String id,
+                                                                       String userId,
+                                                                       String passportNumber,
+                                                                       String firstName,
+                                                                       String lastName,
+                                                                       String email) {
         return buildRequest(UUID.fromString(id), UUID.fromString(userId), passportNumber, firstName, lastName, email);
     }
 
     private static IndividualUpdateRequest buildRequest(UUID id,
-                                                       UUID userId,
-                                                       String passportNumber,
-                                                       String firstName,
-                                                       String lastName,
-                                                       String email) {
+                                                        UUID userId,
+                                                        String passportNumber,
+                                                        String firstName,
+                                                        String lastName,
+                                                        String email) {
         IndividualUpdateRequest request = new IndividualUpdateRequest();
         request.setId(id);
         request.setPassportNumber(passportNumber);

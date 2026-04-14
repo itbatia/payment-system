@@ -7,6 +7,7 @@ import by.itbatia.psp.common.dto.IndividualResponse;
 import by.itbatia.psp.common.dto.IndividualUpdateRequest;
 import by.itbatia.psp.personservice.api.IndividualsApi;
 import by.itbatia.psp.personservice.service.IndividualService;
+import by.itbatia.psp.personservice.util.AuditContextUtil;
 import by.itbatia.psp.personservice.util.ThreadUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -22,15 +23,22 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1")
-public class IndividualController implements IndividualsApi  {
+public class IndividualController implements IndividualsApi {
 
     private final IndividualService individualService;
 
     @Override
-    public ResponseEntity<IndividualResponse> create(IndividualCreateRequest request) {
-        ThreadUtil.setThreadName(request.getUser().getEmail());
-        IndividualResponse response = individualService.create(request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    public ResponseEntity<IndividualResponse> create(String requestInitiator, IndividualCreateRequest request) {
+        try {
+            ThreadUtil.setThreadName(request.getUser().getEmail());
+            AuditContextUtil.set(requestInitiator);
+
+            IndividualResponse response = individualService.create(request);
+            return ResponseEntity.status(HttpStatus.CREATED).body(response);
+
+        } finally {
+            AuditContextUtil.clear();
+        }
     }
 
     @Override
@@ -48,16 +56,30 @@ public class IndividualController implements IndividualsApi  {
     }
 
     @Override
-    public ResponseEntity<IndividualResponse> update(IndividualUpdateRequest request) {
-        ThreadUtil.setThreadName(request.getId());
-        IndividualResponse response = individualService.update(request);
-        return ResponseEntity.ok(response);
+    public ResponseEntity<IndividualResponse> update(String requestInitiator, IndividualUpdateRequest request) {
+        try {
+            ThreadUtil.setThreadName(request.getId());
+            AuditContextUtil.set(requestInitiator);
+
+            IndividualResponse response = individualService.update(request);
+            return ResponseEntity.ok(response);
+
+        } finally {
+            AuditContextUtil.clear();
+        }
     }
 
     @Override
-    public ResponseEntity<Void> delete(UUID id) {
-        ThreadUtil.setThreadName(id);
-        individualService.delete(id);
-        return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+    public ResponseEntity<Void> delete(UUID id, String requestInitiator) {
+        try {
+            ThreadUtil.setThreadName(id);
+            AuditContextUtil.set(requestInitiator);
+
+            individualService.delete(id);
+            return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+
+        } finally {
+            AuditContextUtil.clear();
+        }
     }
 }

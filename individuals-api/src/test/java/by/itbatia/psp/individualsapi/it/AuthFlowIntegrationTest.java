@@ -2,6 +2,7 @@ package by.itbatia.psp.individualsapi.it;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 
 import by.itbatia.psp.common.dto.ErrorResponse;
@@ -291,7 +292,7 @@ class AuthFlowIntegrationTest {
         when(personServiceClient.createIndividual(any(IndividualCreateRequest.class)))
             .thenReturn(Mono.just(userRegistrationRequest));
 
-        when(personServiceClient.deleteIndividual(any()))
+        when(personServiceClient.deleteIndividual(any(), anyString()))
             .thenReturn(Mono.empty());
     }
 }

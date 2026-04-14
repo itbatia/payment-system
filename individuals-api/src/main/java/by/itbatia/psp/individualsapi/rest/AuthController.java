@@ -2,7 +2,6 @@ package by.itbatia.psp.individualsapi.rest;
 
 import by.itbatia.psp.common.dto.IndividualCreateRequest;
 import by.itbatia.psp.individualsapi.api.AuthApi;
-import by.itbatia.psp.individualsapi.client.PersonServiceClient;
 import by.itbatia.psp.individualsapi.dto.TokenRefreshRequest;
 import by.itbatia.psp.individualsapi.dto.TokenResponse;
 import by.itbatia.psp.individualsapi.dto.UserInfoResponse;
@@ -33,14 +32,12 @@ public class AuthController implements AuthApi {
     private final UserService userService;
     private final TokenService tokenService;
     private final PersonService personService;
-    private final PersonServiceClient personServiceClient;
     private final RestValidationService restValidationService;
 
     @Override
     public Mono<@NonNull ResponseEntity<@NonNull TokenResponse>> registerUser(Mono<IndividualCreateRequest> request, ServerWebExchange exchange) {
         return request
             .doOnNext(restValidationService::validate)
-            .flatMap(personServiceClient::createIndividual)
             .flatMap(personService::registerWithFallback)
             .map(tokenResponse -> ResponseEntity.status(HttpStatus.CREATED).body(tokenResponse));
     }
