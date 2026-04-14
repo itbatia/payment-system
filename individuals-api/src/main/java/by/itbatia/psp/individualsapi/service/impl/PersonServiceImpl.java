@@ -1,7 +1,10 @@
 package by.itbatia.psp.individualsapi.service.impl;
 
+import static by.itbatia.psp.individualsapi.util.ConstantUtil.INDIVIDUALS_API;
+
 import java.util.UUID;
 
+import by.itbatia.psp.common.dto.IndividualCreateRequest;
 import by.itbatia.psp.individualsapi.client.PersonServiceClient;
 import by.itbatia.psp.individualsapi.dto.TokenResponse;
 import by.itbatia.psp.individualsapi.dto.UserRegistrationRequest;
@@ -27,13 +30,17 @@ public class PersonServiceImpl implements PersonService {
      * If creating a new user in Keycloak is failed, we delete that user in the person-service and return the original error.
      */
     @Override
-    public Mono<TokenResponse> registerWithFallback(UserRegistrationRequest request) {
+    public Mono<TokenResponse> registerWithFallback(IndividualCreateRequest request) {
+        return personServiceClient.createIndividual(request)
+            .flatMap(this::registerWithFallback);
+    }
+
+    private Mono<TokenResponse> registerWithFallback(UserRegistrationRequest request) {
         UUID individualId = request.getIndividualId();
-        System.out.println("1individualId = " + individualId);
 
         return userService.register(request)
             .doOnError(throwable -> log.warn("Rollback user in 'person-service', because registration error in KC: {}", throwable.getMessage()))
-            .onErrorResume(throwable -> personServiceClient.deleteIndividual(individualId)
+            .onErrorResume(throwable -> personServiceClient.deleteIndividual(individualId, INDIVIDUALS_API)
                 .then(Mono.error(throwable)));
     }
 }

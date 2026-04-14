@@ -39,7 +39,7 @@ public class RestUtil {
      *   },
      *   "scope": "profile email",
      *   "email_verified": true,
-     *   "preferred_username": "test@mail.ru",
+     *   "preferred_username": "john.doe@example.com",
      *   "person_service_user_id": "e32d6d15-e0ad-4f02-8a1b-e80660c69cb8",
      *   "email": "john.doe@example.com"
      * }

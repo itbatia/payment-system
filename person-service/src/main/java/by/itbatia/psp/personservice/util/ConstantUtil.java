@@ -1,4 +1,4 @@
-package by.itbatia.psp.individualsapi.util;
+package by.itbatia.psp.personservice.util;
 
 import lombok.experimental.UtilityClass;
 
@@ -8,7 +8,5 @@ import lombok.experimental.UtilityClass;
 @UtilityClass
 public class ConstantUtil {
 
-    public static final String COLON = ":";
     public static final String X_REQUEST_INITIATOR = "X-Request-Initiator";
-    public static final String INDIVIDUALS_API = "Individuals-api";
 }

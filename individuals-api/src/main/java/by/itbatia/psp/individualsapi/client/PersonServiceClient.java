@@ -1,5 +1,7 @@
 package by.itbatia.psp.individualsapi.client;
 
+import static by.itbatia.psp.individualsapi.util.ConstantUtil.X_REQUEST_INITIATOR;
+
 import java.util.UUID;
 
 import by.itbatia.psp.common.dto.ErrorResponse;
@@ -34,6 +36,7 @@ public class PersonServiceClient {
         return personServiceWebClient
             .post()
             .uri("/api/v1/individuals")
+            .header(X_REQUEST_INITIATOR, request.getUser().getEmail())
             .accept(MediaType.APPLICATION_JSON)
             .contentType(MediaType.APPLICATION_JSON)
             .bodyValue(request)
@@ -70,6 +73,7 @@ public class PersonServiceClient {
         return personServiceWebClient
             .put()
             .uri("/api/v1/individuals")
+            .header(X_REQUEST_INITIATOR, request.getId().toString())
             .accept(MediaType.APPLICATION_JSON)
             .contentType(MediaType.APPLICATION_JSON)
             .bodyValue(request)
@@ -80,9 +84,14 @@ public class PersonServiceClient {
     }
 
     public Mono<Void> deleteIndividual(UUID id) {
+        return deleteIndividual(id, id.toString());
+    }
+
+    public Mono<Void> deleteIndividual(UUID id, String requestInitiator) {
         return personServiceWebClient
             .delete()
             .uri("/api/v1/individuals/{id}", id)
+            .header(X_REQUEST_INITIATOR, requestInitiator)
             .retrieve()
             .onStatus(HttpStatusCode::is4xxClientError, this::handlePersonServiceException)
             .onStatus(HttpStatusCode::is5xxServerError, this::handleException)

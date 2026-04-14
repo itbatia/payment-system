@@ -32,13 +32,13 @@ public interface UserMapper {
     @Mapping(target = "updatedAt", ignore = true)
     UserEntity toUserEntity(UserCreateRequest request);
 
-    @Named("updateUserFromRequest")
+    @Named("enrichUserFromRequest")
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "address", ignore = true)
     @Mapping(target = "filled", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
-    void updateUserFromRequest(UserUpdateRequest request, @MappingTarget UserEntity existingUser);
+    void enrichUserFromRequest(UserUpdateRequest request, @MappingTarget UserEntity existingUser);
 
     @Named("toUserResponse")
     @Mapping(target = "address", source = "address", qualifiedByName = "toAddressResponse")
