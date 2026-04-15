@@ -56,3 +56,8 @@ management:
   endpoint:
     health:
       show-details: ALWAYS
+  opentelemetry:
+    tracing:
+      export:
+        otlp:
+          endpoint: ${OTEL_EXPORTER_OTLP_TRACES_ENDPOINT}
