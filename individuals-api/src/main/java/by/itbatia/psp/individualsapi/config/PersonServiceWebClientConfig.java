@@ -18,12 +18,12 @@ import reactor.netty.http.client.HttpClient;
 public class PersonServiceWebClientConfig {
 
     @Bean(name = "personServiceWebClient")
-    public WebClient personServiceWebClient(PersonServiceClientProperties properties) {
+    public WebClient personServiceWebClient(WebClient.Builder webClientBuilder, PersonServiceClientProperties properties) {
 
         HttpClient httpClient = HttpClient.create()
             .responseTimeout(Duration.ofMillis(properties.getConnectionTimeout()));
 
-        return WebClient.builder()
+        return webClientBuilder
             .baseUrl(properties.getBaseUrl())
             .defaultHeader(HttpHeaders.ACCEPT_CHARSET, StandardCharsets.UTF_8.name())
             .clientConnector(new ReactorClientHttpConnector(httpClient))

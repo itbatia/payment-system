@@ -51,8 +51,9 @@ dependencies {
     // Openapi
     implementation("org.springdoc:springdoc-openapi-starter-webflux-ui:${project.property("springdocOpenapiStarterWebfluxUiVersion")}")
 
-    // Metrics
+    // Observer stack: Metrics + OpenTelemetry (трассировка)
     implementation("org.springframework.boot:spring-boot-starter-actuator")
+    implementation("org.springframework.boot:spring-boot-starter-opentelemetry")
     runtimeOnly("io.micrometer:micrometer-registry-prometheus:${project.property("micrometerRegistryPrometheusVersion")}")
 
     // Lombok + Mapstruct

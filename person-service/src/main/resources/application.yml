@@ -33,8 +33,23 @@ spring:
     password: ${spring.datasource.password}
     locations: classpath:db/migration
 
-#management:
-#  otlp:
-#    metrics:
-#      export:
-#        enabled: false
+# ==================================================================================================================== #
+# METRICS config                                                                                                       #
+# ==================================================================================================================== #
+management:
+  prometheus:
+    metrics:
+      export:
+        enabled: ${EXPORT_METRICS_ENABLED}
+  endpoints:
+    web:
+      exposure:
+        include: prometheus, health
+  endpoint:
+    health:
+      show-details: ALWAYS
+  opentelemetry:
+    tracing:
+      export:
+        otlp:
+          endpoint: ${OTEL_EXPORTER_OTLP_TRACES_ENDPOINT}
