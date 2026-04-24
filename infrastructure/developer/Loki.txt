@@ -57,7 +57,7 @@ FILE Appender:
     <!-- =========================================================================================================== -->
     <appender name="JSON_CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
         <encoder class="net.logstash.logback.encoder.LogstashEncoder">
-            <customFields>{"app":"${APP_NAME}"}</customFields>
+            <customFields>{"service":"${APP_NAME}"}</customFields>
         </encoder>
     </appender>
 

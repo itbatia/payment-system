@@ -110,7 +110,7 @@
           "disableTextWrap": false,
           "editorMode": "code",
           "exemplar": false,
-          "expr": "round(increase(login_total{app=\"individuals-api\", status=\"success\"}[1h]))",
+          "expr": "round(increase(login_total{service=\"individuals-api\", status=\"success\"}[1h]))",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
           "instant": false,
@@ -126,7 +126,7 @@
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "round(increase(login_total{app=\"individuals-api\", status=\"fail\"}[1h]))",
+          "expr": "round(increase(login_total{service=\"individuals-api\", status=\"fail\"}[1h]))",
           "format": "time_series",
           "hide": false,
           "instant": false,
@@ -141,7 +141,7 @@
             "uid": "PROMETHEUS_DS"
           },
           "editorMode": "code",
-          "expr": "round(increase(registration_total{app=\"individuals-api\", status=\"success\"}[1h]))",
+          "expr": "round(increase(registration_total{service=\"individuals-api\", status=\"success\"}[1h]))",
           "hide": false,
           "instant": false,
           "legendFormat": "Успешные регистрации",
@@ -154,7 +154,7 @@
             "uid": "PROMETHEUS_DS"
           },
           "editorMode": "code",
-          "expr": "round(increase(registration_total{app=\"individuals-api\", status=\"fail\"}[1h]))",
+          "expr": "round(increase(registration_total{service=\"individuals-api\", status=\"fail\"}[1h]))",
           "hide": false,
           "instant": false,
           "legendFormat": "Неудачные регистрации",
@@ -202,7 +202,7 @@
           },
           "direction": "forward",
           "editorMode": "code",
-          "expr": "{app=\"individuals-api\"}",
+          "expr": "{service=\"individuals-api\"}",
           "queryType": "range",
           "refId": "A"
         }
@@ -335,7 +335,7 @@
           },
           "direction": "forward",
           "editorMode": "code",
-          "expr": "{app=\"individuals-api\"} |~ \"(ERROR|WARN)\"",
+          "expr": "{service=\"individuals-api\"} |~ \"(ERROR|WARN)\"",
           "queryType": "range",
           "refId": "A"
         }
@@ -428,7 +428,7 @@
             "uid": "PROMETHEUS_DS"
           },
           "editorMode": "code",
-          "expr": "rate(kc_login_latency_seconds_sum{app=\"individuals-api\", status=\"success\"}[5m])\r\n/\r\nrate(kc_login_latency_seconds_count{app=\"individuals-api\", status=\"success\"}[5m])\r\nunless\r\nrate(kc_login_latency_seconds_count{app=\"individuals-api\", status=\"success\"}[5m]) <= 0",
+          "expr": "rate(kc_login_latency_seconds_sum{service=\"individuals-api\", status=\"success\"}[5m])\r\n/\r\nrate(kc_login_latency_seconds_count{service=\"individuals-api\", status=\"success\"}[5m])\r\nunless\r\nrate(kc_login_latency_seconds_count{service=\"individuals-api\", status=\"success\"}[5m]) <= 0",
           "instant": false,
           "legendFormat": "Среднее время логина в Keycloak",
           "range": true,
@@ -440,7 +440,7 @@
             "uid": "PROMETHEUS_DS"
           },
           "editorMode": "code",
-          "expr": "rate(kc_registration_latency_seconds_sum{app=\"individuals-api\", status=\"success\"}[5m])\r\n/\r\nrate(kc_registration_latency_seconds_count{app=\"individuals-api\", status=\"success\"}[5m])\r\nunless\r\nrate(kc_registration_latency_seconds_count{app=\"individuals-api\", status=\"success\"}[5m]) <= 0",
+          "expr": "rate(kc_registration_latency_seconds_sum{service=\"individuals-api\", status=\"success\"}[5m])\r\n/\r\nrate(kc_registration_latency_seconds_count{service=\"individuals-api\", status=\"success\"}[5m])\r\nunless\r\nrate(kc_registration_latency_seconds_count{service=\"individuals-api\", status=\"success\"}[5m]) <= 0",
           "hide": false,
           "instant": false,
           "legendFormat": "Среднее время регистрации в Keycloak",
@@ -537,7 +537,7 @@
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "rate(http_server_requests_seconds_sum{app=\"individuals-api\", uri=\"/api/v1/auth/login\", status=\"200\"}[5m])\r\n/\r\nrate(http_server_requests_seconds_count{app=\"individuals-api\", uri=\"/api/v1/auth/login\", status=\"200\"}[5m])",
+          "expr": "rate(http_server_requests_seconds_sum{service=\"individuals-api\", uri=\"/api/v1/auth/login\", status=\"200\"}[5m])\r\n/\r\nrate(http_server_requests_seconds_count{service=\"individuals-api\", uri=\"/api/v1/auth/login\", status=\"200\"}[5m])",
           "format": "time_series",
           "instant": false,
           "legendFormat": "HTTP latency (login endpoint)",
@@ -550,7 +550,7 @@
             "uid": "PROMETHEUS_DS"
           },
           "editorMode": "code",
-          "expr": "rate(kc_login_latency_seconds_sum{app=\"individuals-api\", status=\"success\"}[5m])\r\n/\r\nrate(kc_login_latency_seconds_count{app=\"individuals-api\", status=\"success\"}[5m])",
+          "expr": "rate(kc_login_latency_seconds_sum{service=\"individuals-api\", status=\"success\"}[5m])\r\n/\r\nrate(kc_login_latency_seconds_count{service=\"individuals-api\", status=\"success\"}[5m])",
           "hide": false,
           "instant": false,
           "legendFormat": "Keycloak latency (login)",
@@ -648,7 +648,7 @@
           },
           "direction": "backward",
           "editorMode": "code",
-          "expr": "rate({app=\"individuals-api\"} |= \"ERROR\" [5m])",
+          "expr": "rate({service=\"individuals-api\"} |= \"ERROR\" [5m])",
           "legendFormat": "ERROR",
           "queryType": "range",
           "refId": "A",

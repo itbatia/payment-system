@@ -6,6 +6,7 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import java.util.Optional;
 import java.util.UUID;
 
+import by.itbatia.psp.personservice.common.TestContainersSupport;
 import by.itbatia.psp.personservice.entity.AddressEntity;
 import by.itbatia.psp.personservice.entity.CountryEntity;
 import by.itbatia.psp.personservice.entity.IndividualEntity;
@@ -37,16 +38,11 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 public class IndividualRepositoryTest {
 
     @Container
-    private static final PostgreSQLContainer<?> POSTGRES_CONTAINER = new PostgreSQLContainer<>("postgres:17")
-        .withDatabaseName("test")
-        .withUsername("test")
-        .withPassword("test");
+    private static final PostgreSQLContainer<?> POSTGRES_CONTAINER = TestContainersSupport.createPostgresContainer();
 
     @DynamicPropertySource
     private static void configureProperties(DynamicPropertyRegistry registry) {
-        registry.add("spring.datasource.url", POSTGRES_CONTAINER::getJdbcUrl);
-        registry.add("spring.datasource.username", POSTGRES_CONTAINER::getUsername);
-        registry.add("spring.datasource.password", POSTGRES_CONTAINER::getPassword);
+        TestContainersSupport.configurePostgresProperties(registry, POSTGRES_CONTAINER);
     }
 
     private static final String UNIQUE_IDX_NAME_IN_DB = "users_email_key";

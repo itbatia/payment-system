@@ -63,3 +63,5 @@ limits_config:
 # ==================================================================================================================== #
 compactor:
   working_directory: /loki/compactor          # Временная директория для работы компактора
+
+# Docs: https://grafana.com/docs/loki/latest/configure/examples/configuration-examples/

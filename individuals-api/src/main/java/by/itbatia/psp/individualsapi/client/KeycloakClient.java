@@ -131,7 +131,8 @@ public class KeycloakClient {
      */
     public Mono<@NonNull UserInfoResponse> fetchUserInfo(String userId) {
         return keycloakAdminTokenClient.getValidAdminToken()
-            .flatMap(token -> getUserById(userId, token));
+            .flatMap(token -> getUserById(userId, token))
+            .doOnSuccess(user -> log.info("Fetched user info for [userId={}]", userId));
     }
 
     private Mono<@NonNull UserInfoResponse> getUserById(String userId, String token) {

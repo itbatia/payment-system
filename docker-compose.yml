@@ -17,8 +17,12 @@ services:
     depends_on:
       keycloak-postgres:
         condition: service_healthy
+    networks:
+      - app-network
+      - keycloak-db-net
+    restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "echo > /dev/tcp/localhost/8080"]              # Used TCP healthcheck because 'curl' not found
+      test: ["CMD-SHELL", "echo > /dev/tcp/localhost/8080"]                   # Used TCP healthcheck because 'curl' not found
       interval: 10s
       timeout: 5s
       retries: 10
@@ -26,12 +30,17 @@ services:
   keycloak-postgres:
     image: postgres:17
     container_name: keycloak-postgres
+    ports:
+      - "5433:5432"
     environment:
       POSTGRES_DB: keycloak
       POSTGRES_USER: keycloak
       POSTGRES_PASSWORD: keycloak
-    ports:
-      - "5433:5432"
+    volumes:
+      - keycloak_postgres_data:/var/lib/postgresql/data                       # To save state between container restarts
+    networks:
+      - keycloak-db-net
+    restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U keycloak"]
       interval: 10s
@@ -47,25 +56,110 @@ services:
       - "8082:8082"
     environment:
       SERVER_PORT: 8082
-      LOG_LEVEL_TOKEN_SERVICE: DEBUG                      # DEBUG/INFO -> with/without: (log example) 'User with [username=test@mail.ru] has logged in'.
-      KC_REALM: individuals                               # Name of the Keycloak realm used for authentication and user management.
-      KC_BASE_URL: http://keycloak:8080                   # Base URL of the Keycloak server.
-      KC_CLIENT_ID: individuals-api                       # Client ID registered in Keycloak for this service.
-      KC_CLIENT_SECRET: 9nekCm9JrhldqeBx5bw00LIzIBRYve6l  # Secret associated with the Keycloak client. Must be hidden in production env.
-      KC_CONNECTION_TIMEOUT: 5000                         # Timeout (in millis) for HTTP connections to the Keycloak server.
-      KC_ADMIN_TOKEN_CACHING_TIME_IN_SEC: 290             # Admin token caching time. Must be less than the actual expires_in (expires_in = 300).
-      EXPORT_METRICS_ENABLED: true                        # Enable/disable export metrics by Prometheus.
-      PERSON_SERVICE_BASE_URL: http://person-service:8083 # Base URL of the Person service.
-      PERSON_SERVICE_CONNECTION_TIMEOUT: 5000             # Timeout (in millis) for HTTP connections to the Person service.
+      LOG_LEVEL_TOKEN_SERVICE: DEBUG                                          # DEBUG/INFO -> with/without: (log example) 'User with [username=test@mail.ru] has logged in'.
+      LOG_LEVEL_WEB_FILTER_CONFIG: DEBUG                                      # DEBUG/INFO -> with/without: (log example) 'Request received for URL: /api/v1/auth/registration'.
+      LOG_LEVEL_OTEL_UTIL: DEBUG                                              # DEBUG/INFO -> with/without: (log example) 'Baggage enriched with [email=...]'.
+      LOG_LEVEL_WEB_FILTER: DEBUG                                             # DEBUG/INFO -> with/without: (log example) 'Request on [url=...] from [userId=...]'.
+      KC_REALM: individuals                                                   # Name of the Keycloak realm used for authentication and user management.
+      KC_BASE_URL: http://keycloak:8080                                       # Base URL of the Keycloak server.
+      KC_CLIENT_ID: individuals-api                                           # Client ID registered in Keycloak for this service.
+      KC_CLIENT_SECRET: 9nekCm9JrhldqeBx5bw00LIzIBRYve6l                      # Secret associated with the Keycloak client. Must be hidden in production env.
+      KC_CONNECTION_TIMEOUT: 5000                                             # Timeout (in millis) for HTTP connections to the Keycloak server.
+      KC_ADMIN_TOKEN_CACHING_TIME_IN_SEC: 290                                 # Admin token caching time. Must be less than the actual expires_in (expires_in = 300).
+      PERSON_SERVICE_BASE_URL: http://person-service:8083                     # Base URL of the Person service.
+      PERSON_SERVICE_CONNECTION_TIMEOUT: 5000                                 # Timeout (in millis) for HTTP connections to the Person service.
+      PROMETHEUS_METRICS_EXPORT_ENABLED: true                                 # Enable/disable export metrics by Prometheus (pull model).
+      OTLP_METRICS_EXPORT_ENABLED: false                                      # Enable/disable export metrics to Tempo (push model).
+      OTEL_TRACING_EXPORT_OTLP_ENDPOINT: http://otel-collector:4318/v1/traces # Url for export traces via OTLP/HTTP protocol.
+      TRACING_EXPORT_ENABLED: true                                            # Enable/disable export traces to Tempo (push model).
+      TRACING_PROPAGATION_TYPE: w3c                                           # Tracing context propagation type (W3C-specification).
+      TRACING_SAMPLING_PROBABILITY: 1.0                                       # 1.0 = 100% requests (default: 0.1 = 10%).
+      OTEL_BSP_SCHEDULE_DELAY: 5000                                           # Used by OpenTelemetry SDK. If near real-time tracing -> 1000. If debug -> 500 (Как часто отправлять батч, millis)
+      OTEL_BSP_MAX_EXPORT_BATCH_SIZE: 512                                     # Used by OpenTelemetry SDK. If high load -> 2048 (Максимум span’ов в одном запросе)
+      OTEL_BSP_MAX_QUEUE_SIZE: 2048                                           # Used by OpenTelemetry SDK. If high load -> 8196 (Размер буфера в памяти, bytes)
+      OTEL_BSP_EXPORT_TIMEOUT: 30000                                          # Used by OpenTelemetry SDK. Сколько ждать отправки (30 сек)
     depends_on:
+      person-service:
+        condition: service_healthy
       keycloak:
         condition: service_healthy
       prometheus:
         condition: service_healthy
       loki:
         condition: service_healthy
+      tempo:
+        condition: service_started
+    networks:
+      - app-network
+    restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8082/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  person-service:
+    build:
+      context: .
+      dockerfile: person-service/Dockerfile
+    container_name: person-service
+#    expose:
+#      - "8083"
+    ports:
+      - "8083:8083"
+    environment:
+      SERVER_PORT: 8083
+      POSTGRES_USERNAME: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_URL: jdbc:postgresql://person-postgres:5432/psp
+      SQL_LOGGING_ENABLED: false                                              # Enable/disable SQL logging.
+      FLYWAY_ENABLED: true                                                    # Enable/disable DB migrations.
+      PROMETHEUS_METRICS_EXPORT_ENABLED: true                                 # Enable/disable export metrics by Prometheus (pull model).
+      OTLP_METRICS_EXPORT_ENABLED: false                                      # Enable/disable export metrics to Tempo (push model).
+      OTEL_TRACING_EXPORT_OTLP_ENDPOINT: http://otel-collector:4318/v1/traces # Url for export traces via OTLP/HTTP protocol.
+      TRACING_EXPORT_ENABLED: true                                            # Enable/disable export traces to Tempo (push model).
+      TRACING_PROPAGATION_TYPE: w3c                                           # Tracing context propagation type (W3C-specification).
+      TRACING_SAMPLING_PROBABILITY: 1.0                                       # 1.0 = 100% requests (default: 0.1 = 10%).
+      OTEL_BSP_SCHEDULE_DELAY: 5000                                           # Used by OpenTelemetry SDK. If near real-time tracing -> 1000. If debug -> 500 (Как часто отправлять батч, millis)
+      OTEL_BSP_MAX_EXPORT_BATCH_SIZE: 512                                     # Used by OpenTelemetry SDK. If high load -> 2048 (Максимум span’ов в одном запросе)
+      OTEL_BSP_MAX_QUEUE_SIZE: 2048                                           # Used by OpenTelemetry SDK. If high load -> 8196 (Размер буфера в памяти, bytes)
+      OTEL_BSP_EXPORT_TIMEOUT: 30000                                          # Used by OpenTelemetry SDK. Сколько ждать отправки (30 сек)
+    depends_on:
+      person-postgres:
+        condition: service_healthy
+      prometheus:
+        condition: service_healthy
+      loki:
+        condition: service_healthy
+      tempo:
+        condition: service_started
+    networks:
+      - app-network
+      - person-db-net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8083/actuator/health"]
+      interval: 10s                                                           # Проверять каждые 10с
+      timeout: 5s                                                             # Ждать ответ не дольше 5с
+      retries: 5                                                              # Считать контейнер здоровым, только после 5 успешных проверок подряд
+      start_period: 5s                                                        # Даём приложению 5с на запуск (миграции и т.д.)
+
+  person-postgres:
+    image: postgres:17
+    container_name: person-postgres
+    ports:
+      - "5434:5432"
+    environment:
+      POSTGRES_DB: psp
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - person_postgres_data:/var/lib/postgresql/data                         # To save state between container restarts
+    networks:
+      - person-db-net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -73,10 +167,17 @@ services:
   prometheus:
     image: prom/prometheus:latest
     container_name: prometheus-psp
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--web.enable-remote-write-receiver"                                  # Allows POST /api/v1/write. See tempo-config.yaml → metrics_generator
+      - '--enable-feature=exemplar-storage'                                   # В Grafana на графике latency появляются точки → кликаешь точку → попадаешь в trace
     ports:
       - "9090:9090"
     volumes:
       - ./infrastructure/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+    networks:
+      - app-network
+    restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "--spider", "http://localhost:9090/-/healthy"]
       interval: 10s
@@ -86,12 +187,15 @@ services:
   loki:
     image: grafana/loki:3.5.12
     container_name: loki
+    command: -config.file=/etc/loki/local-config.yaml
     ports:
       - "3100:3100"
-    command: -config.file=/etc/loki/local-config.yaml
     volumes:
       - ./infrastructure/loki/loki-config.yaml:/etc/loki/local-config.yaml:ro
-      - loki_data:/loki                                                   # to save state between container restarts
+      - loki_data:/loki                                                       # To save state between container restarts
+    networks:
+      - app-network
+    restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "--spider", "http://localhost:3100/ready"]
       interval: 10s
@@ -99,21 +203,27 @@ services:
       retries: 5
 
   grafana:
-    image: grafana/grafana:12.3.5
+    image: grafana/grafana:12.4.3                                             # Last - 13.0.1
     container_name: grafana-psp
     ports:
       - "3000:3000"
-    depends_on:
-      prometheus:
-        condition: service_healthy
-      loki:
-        condition: service_healthy
     environment:
       GF_SECURITY_ADMIN_USER: admin
       GF_SECURITY_ADMIN_PASSWORD: admin
     volumes:
       - ./infrastructure/grafana/provisioning:/etc/grafana/provisioning
       - ./infrastructure/grafana/dashboards:/var/lib/grafana/dashboards
+      - grafana_data:/var/lib/grafana                                         # To save state between container restarts
+    networks:
+      - app-network
+    depends_on:
+      prometheus:
+        condition: service_healthy
+      loki:
+        condition: service_healthy
+      tempo:
+        condition: service_started
+    restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "--spider", "http://localhost:3000/api/health"]
       interval: 10s
@@ -123,12 +233,15 @@ services:
   promtail:
     image: grafana/promtail:3.5.12
     container_name: promtail
+    command: -config.file=/etc/promtail/config.yml
     volumes:
       - ./infrastructure/promtail/promtail-config.yml:/etc/promtail/config.yml
-#      - /var/run/docker.sock:/var/run/docker.sock                        # ← for Linux/macOS only
-    command: -config.file=/etc/promtail/config.yml
+#      - /var/run/docker.sock:/var/run/docker.sock                            # ← for Linux/macOS only
+    networks:
+      - app-network
     depends_on:
       - loki
+    restart: unless-stopped
     healthcheck:
       test: [ "CMD", "wget", "--spider", "http://localhost:9080/metrics" ]
       interval: 30s
@@ -136,5 +249,57 @@ services:
       retries: 3
       start_period: 10s
 
+  tempo:
+    image: grafana/tempo:2.10.4
+    container_name: tempo
+    command: [ "-config.file=/etc/tempo.yaml" ]
+    ports:
+      - "3200:3200"                                                           # OTLP/HTTP — used by Grafana.
+    expose:
+      - "4317"                                                                # OTLP/gRPC — used by Collector. Optional: "4318:4318" - OTLP/HTTP
+    environment:
+      TEMPO_LOG_LEVEL: INFO                                                   # If INFO, to see the reception of traces
+    volumes:
+      - ./infrastructure/tempo/tempo-config.yaml:/etc/tempo.yaml:ro
+      - tempo_data:/var/tempo                                                 # To save state between container restarts
+    networks:
+      - app-network
+    depends_on:
+      prometheus:
+        condition: service_healthy
+    restart: unless-stopped
+
+  otel-collector:                                                             # Принимает данные, обрабатывает, отправляет дальше. Для: filter, sampling, routing, multi-export
+    image: otel/opentelemetry-collector-contrib:0.150.1                       # otel/opentelemetry-collector → минимальный. otel/opentelemetry-collector-contrib → всё (фильтры, kafka, loki и т.д.)
+    container_name: otel-collector
+    command: ["--config=/etc/otelcol/config.yaml"]
+    ports:
+      - "4318:4318"
+#    expose:                                                                   # Spring → HTTP (4318) → Collector. Collector → gRPC (4317) → Tempo
+#      - "4318"                                                                # OTLP/HTTP — used by Spring Boot.
+    volumes:
+      - ./infrastructure/otel/otel-collector.yaml:/etc/otelcol/config.yaml:ro
+    networks:
+      - app-network
+    depends_on:
+      - tempo
+    healthcheck:
+      test: [ "CMD", "wget", "-qO-", "http://localhost:13133/health" ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
 volumes:
+  keycloak_postgres_data:
+  person_postgres_data:
   loki_data:
+  tempo_data:
+  grafana_data:
+
+networks:
+  app-network:
+    driver: bridge
+  keycloak-db-net:
+    driver: bridge
+  person-db-net:
+    driver: bridge

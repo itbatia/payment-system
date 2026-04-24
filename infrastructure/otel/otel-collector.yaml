@@ -1,0 +1,64 @@
+#file: noinspection YAMLSchemaValidation
+
+receivers:
+  otlp:
+    protocols:
+      http:
+        endpoint: "0.0.0.0:4318"                             # To receive traces from Spring
+
+processors:
+
+  filter:                                                    # Убираем все запросы /actuator/* и /swagger* (Check http.target: may be http.route or url.path)
+    traces:
+      span:
+        - 'IsMatch(attributes["http.url"], "^/actuator/.*")'
+        - 'IsMatch(attributes["http.url"], "^/swagger.*")'
+
+  tail_sampling:
+    decision_wait: 10s                                       # Collector ждёт 10 секунд все span’ы трейса → принимает решение (это будет задержкой появления трейса в Grafana)
+    num_traces: 50000                                        # Буфер (важно при нагрузке)
+
+    policies:
+
+      - name: http-errors                                    # 🔴 ошибки - всегда сохраняем
+        type: string_attribute
+        string_attribute:
+          key: http.status                                   # http.status is string
+          values: ["400", "401", "403", "404", "405", "409", "500", "502", "503", "504"]
+
+      - name: slow                                           # 🐢 медленные запросы (>1 сек) - всегда сохраняем
+        type: latency
+        latency:
+          threshold_ms: 1000
+
+      - name: important                                      # 💰 важный endpoint - всегда сохраняем
+        type: string_attribute
+        string_attribute:
+          key: http.url
+          values: [ "/api/v1/auth/registration" ]
+
+      - name: probabilistic                                  # 🎲 всё остальное — 10% сохраняем
+        type: probabilistic
+        probabilistic:
+          sampling_percentage: 10
+
+  batch:                                                     # Оптимизация отправки. Uses default value
+
+exporters:
+  otlp_grpc:
+    endpoint: tempo:4317                                     # Collector ходит в Tempo по gRPC (4317)
+    tls:
+      insecure: true
+  debug:
+    verbosity: detailed                                      # Для PROD -> basic. DEV -> detailed.
+
+extensions:
+  health_check:
+
+service:
+  pipelines:
+    traces:
+      receivers: [ otlp ]
+      processors: [ filter, tail_sampling, batch ]           # BatchSpanProcessor: накапливает spans и отправляет либо по таймеру, либо при заполнении буфера. Очерёдность → сначала убираем мусор (filter), потом sampling
+      exporters: [ otlp_grpc, debug ]
+  extensions: [ health_check ]

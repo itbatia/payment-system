@@ -71,7 +71,8 @@ dependencies {
 
     // Observer stack: Metrics + OpenTelemetry (трассировка)
     implementation("org.springframework.boot:spring-boot-starter-actuator")
-    implementation("org.springframework.boot:spring-boot-starter-opentelemetry") // Contains OpenTelemetry SDK + OTLP exporter
+    implementation("org.springframework.boot:spring-boot-starter-opentelemetry")  // Contains OpenTelemetry SDK + OTLP exporter
+    implementation("io.opentelemetry:opentelemetry-exporter-otlp")                // OTLP exporter to send traces. Explicit addition
     runtimeOnly("io.micrometer:micrometer-registry-prometheus:${project.property("micrometerRegistryPrometheusVersion")}")
 //    implementation("io.opentelemetry.instrumentation:opentelemetry-spring-boot-starter:${project.property("opentelemetrySpringBootStarterVersion")}")
 //    implementation ("io.github.openfeign:feign-micrometer:${project.property("feignMicrometerVersion")}")

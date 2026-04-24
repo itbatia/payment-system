@@ -19,12 +19,13 @@ import reactor.netty.http.client.HttpClient;
 public class KeycloakWebClientConfig {
 
     @Bean(name = "keycloakWebClient")
-    public WebClient keycloakWebClient(KeycloakProperties properties) {
+    public WebClient keycloakWebClient(WebClient.Builder webClientBuilder, KeycloakProperties properties) {
 
         HttpClient httpClient = HttpClient.create()
             .responseTimeout(Duration.ofMillis(properties.getConnectionTimeout()));
 
-        return WebClient.builder()
+        return webClientBuilder
+            .clone()
             .baseUrl(properties.getBaseUrl())
             .defaultHeader(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE)
             .defaultHeader(HttpHeaders.ACCEPT_CHARSET, StandardCharsets.UTF_8.name())

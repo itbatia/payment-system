@@ -13,6 +13,9 @@ info:
 logging:
   level:
     by.itbatia.psp.individualsapi.service.impl.TokenServiceImpl: ${LOG_LEVEL_TOKEN_SERVICE}
+    by.itbatia.psp.individualsapi.config.WebFilterConfig: ${LOG_LEVEL_WEB_FILTER_CONFIG}
+    by.itbatia.psp.individualsapi.util.OtelUtil: ${LOG_LEVEL_OTEL_UTIL}
+    by.itbatia.psp.individualsapi.filter.LoggingWebFilter: ${LOG_LEVEL_WEB_FILTER}
 
 # ==================================================================================================================== #
 # APPLICATION config                                                                                                   #
@@ -35,6 +38,8 @@ individuals-api:
 # SPRING config                                                                                                        #
 # ==================================================================================================================== #
 spring:
+  application:
+    name: ${info.application.name}
   security:
     oauth2:
       resourceserver:
@@ -42,22 +47,32 @@ spring:
           jwk-set-uri: ${individuals-api.keycloak.base-url}/realms/${individuals-api.keycloak.realm}/protocol/openid-connect/certs
 
 # ==================================================================================================================== #
-# METRICS config                                                                                                       #
+# METRICS + OPENTELEMETRY config                                                                                       #
 # ==================================================================================================================== #
 management:
   prometheus:
     metrics:
       export:
-        enabled: ${EXPORT_METRICS_ENABLED}
+        enabled: ${PROMETHEUS_METRICS_EXPORT_ENABLED}
   endpoints:
     web:
       exposure:
         include: prometheus, health
-  endpoint:
-    health:
-      show-details: ALWAYS
+  otlp:
+    metrics:
+      export:
+        enabled: ${OTLP_METRICS_EXPORT_ENABLED}
   opentelemetry:
     tracing:
       export:
         otlp:
-          endpoint: ${OTEL_EXPORTER_OTLP_TRACES_ENDPOINT}
+          endpoint: ${OTEL_TRACING_EXPORT_OTLP_ENDPOINT}
+    resource-attributes:
+      service.name: ${info.application.name}
+  tracing:
+    export:
+      enabled: ${TRACING_EXPORT_ENABLED}
+    propagation:
+      type: ${TRACING_PROPAGATION_TYPE}
+    sampling:
+      probability: ${TRACING_SAMPLING_PROBABILITY}

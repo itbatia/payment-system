@@ -11,13 +11,14 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import reactor.core.publisher.Mono;
 
-import static by.itbatia.psp.individualsapi.util.KeycloakConstantUtil.EMAIL_CLAIM;
-
 /**
  * @author Batsian_SV
  */
 @UtilityClass
 public class RestUtil {
+
+    private static final String USER_ID_CLAIM = "person_service_user_id";
+    private static final String EMAIL_CLAIM = "email";
 
     /**
      * Example of an incoming access token:
@@ -53,6 +54,11 @@ public class RestUtil {
     public static Mono<String> getPrincipalUserEmail() {
         return getPrincipal()
             .map(jwt -> jwt.getClaimAsString(EMAIL_CLAIM));
+    }
+
+    public static Mono<String> getPrincipalUserId() {
+        return getPrincipal()
+            .map(jwt -> jwt.getClaimAsString(USER_ID_CLAIM));
     }
 
     public static Mono<Jwt> getPrincipal() {

@@ -24,6 +24,7 @@ public class PersonServiceWebClientConfig {
             .responseTimeout(Duration.ofMillis(properties.getConnectionTimeout()));
 
         return webClientBuilder
+            .clone()
             .baseUrl(properties.getBaseUrl())
             .defaultHeader(HttpHeaders.ACCEPT_CHARSET, StandardCharsets.UTF_8.name())
             .clientConnector(new ReactorClientHttpConnector(httpClient))
