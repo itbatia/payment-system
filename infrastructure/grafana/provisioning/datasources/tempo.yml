@@ -22,8 +22,8 @@ datasources:
           - key: "service.name"
             value: "service"
           - key: "trace_id"
-          - key: "custom_status"  # ← Ваш кастомный тег
-            value: "custom_status"
+          - key: "http.status"                      # Кастомный тег спана (например: 400, 409, 500)
+            value: "http.status"
         filterByTraceID: true                       # Включает фильтрацию по trace_id. При нажатии «Show logs**» Grafana автоматически добавляет условие trace_id="..." в запрос
         customQuery: true                           # Вместо тяжёлого запроса для поиска логов (пример внизу) будет лёгкий: {trace_id="9ea4b5b223cdd084c26391eb07114362"}
         query: '{trace_id="$${__trace.traceId}"}'

@@ -55,6 +55,7 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-actuator")
     implementation("org.springframework.boot:spring-boot-starter-opentelemetry") // Contains OpenTelemetry SDK + OTLP exporter
     implementation("org.springframework.boot:spring-boot-starter-webclient")     // Auto-config for WebClient, so that WebClient.Builder is automatically created by Spring with observability, filters, and other settings
+
     runtimeOnly("io.micrometer:micrometer-registry-prometheus:${project.property("micrometerRegistryPrometheusVersion")}")
 
     // Lombok + Mapstruct

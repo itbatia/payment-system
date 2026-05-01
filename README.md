@@ -165,6 +165,35 @@ _Все сервисы должны быть в состоянии Up.
 └── README.md               # Этот файл
 ```
 
+## Observability-стек
+
+```text
+Payment-service APIs
+│
+├── OTLP (трассировки + метрики) ──┐
+│                                  │
+└── stdout (Docker logs) ──────────┤
+                                   ↓
+                              Alloy (collector)
+                                   │
+           ┌───────────────────────┼───────────────────────┐
+           ↓                       ↓                       ↓
+        Tempo                    Loki                   Prometheus
+   (traces / spans)        (structured logs)     (metrics via remote_write)
+           │                       │                       │
+           └───────────────────────┼───────────────────────┘
+                                   ↓
+                                Grafana
+                         (Dashboards + Alerting)
+                                   │
+                                   ↓
+                              Alertmanager
+                                   │
+                  ┌────────────────┴────────────────┐
+                  ↓                                 ↓
+              Telegram                    Grafana (alerting/list)
+```
+
 # Individuals-API
 
 Микросервис, отвечающий за оркестрацию процессов аутентификации пользователей в системе.  

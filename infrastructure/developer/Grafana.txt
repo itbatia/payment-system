@@ -47,3 +47,8 @@ providers:
 3. Сканирует папку /var/lib/grafana/dashboards (т.е. ./grafana/dashboards/ из проекта).
 4. Находит individuals-api-dashboard.json.
 5. Загружает его, подставляя datasource по uid: "PROMETHEUS_DS" → всё работает.
+
+========================================================================================================================
+Настройки корреляции между Tempo и Loki в Grafana для перехода по кнопке: 'Logs for this span':
+derivedFields в Loki datasource,
+tracesToLogsV2 в Tempo datasource.

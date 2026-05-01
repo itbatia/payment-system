@@ -1,0 +1,39 @@
+# Это подключает Alertmanager к Grafana Unified Alerting (Grafana -> Alerting -> Alert rules):
+
+global:
+  resolve_timeout: 5m
+
+route:
+  receiver: 'grafana'
+  group_by: ['alertname', 'service']
+  group_wait: 10s
+  group_interval: 1m
+  repeat_interval: 1h
+  routes:
+    - match:
+        severity: warning
+      receiver: 'telegram'
+    - match:
+        severity: critical
+      receiver: 'telegram'
+
+receivers:
+  - name: 'grafana'
+    webhook_configs:
+      - url: 'http://grafana:3000/api/alerting/grafana'                        # ← Grafana Alerting API
+        send_resolved: true
+
+  - name: 'telegram'
+    telegram_configs:
+      - bot_token: <BOT_TOKEN>                                                 # Required BOT_TOKEN
+        chat_id: 0101010101                                                    # Required CHAT_ID
+        send_resolved: true
+        parse_mode: HTML
+        message: |                                                             # Текст сообщения для Telegram. URL requires domain
+          <b>{{ .Status | toUpper }}: {{ .CommonLabels.alertname }}</b>
+          Service: {{ .CommonLabels.service }}
+          Summary: {{ .CommonAnnotations.summary }}
+          Description: {{ .CommonAnnotations.description }}
+          <a href="http://127.0.0.1:3000/alerting/list">View in Grafana</a>
+
+templates: []

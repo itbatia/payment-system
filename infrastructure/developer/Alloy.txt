@@ -1,0 +1,72 @@
+                                             *********************
+                                             *****   Alloy   *****
+                                             *********************
+
+Полный pipeline:
+
+otelcol.receiver.otlp "default" {
+  grpc {}
+  http {}
+
+  output {
+    traces  = [otelcol.processor.memory_limiter.default.input]
+    metrics = [otelcol.processor.memory_limiter.default.input]
+  }
+}
+
+otelcol.processor.memory_limiter "default" {
+  check_interval = "1s"
+  limit_percentage = 80
+
+  output {
+    traces  = [otelcol.processor.filter.drop_noise.input]
+    metrics = [otelcol.processor.batch.default.input]
+  }
+}
+
+otelcol.processor.batch "default" {
+  output {
+    traces  = [otelcol.exporter.otlp.tempo.input]
+    metrics = [otelcol.exporter.prometheus.metrics.input]
+  }
+}
+
+
+otelcol.exporter.prometheus "metrics" {
+  forward_to = [prometheus.remote_write.default.receiver]
+}
+// Это bridge:
+// otelcol.processor.batch ожидает otelcol.Consumer, а prometheus.remote_write — это НЕ otelcol компонент
+
+
+prometheus.remote_write "default" {
+  endpoint {
+    url = "http://prometheus:9090/api/v1/write"
+  }
+}
+
+========================================================================================================================
+
+1. OpenTelemetry pipeline (otelcol.*)
+receiver → processor → exporter
+Тип: otelcol.Consumer
+
+2. Prometheus pipeline
+scrape → remote_write
+Тип: storage.Appendable
+
+========================================================================================================================
+
+loki.process "parse_trace_context" {                         // Это даёт в Grafana (по клику): Logs → Trace, Trace → Logs
+  stage.regex {                                              // Извлекает группы захвата (лог: [traceId,spanId])
+    expression = ".*\\[(?P<trace_id>[a-f0-9]{32}),(?P<span_id>[a-f0-9]+)\\].*"
+    labels_from_groups = true                                // Именованные группы захвата ((?P<trace_id>...) и (?P<span_id>...)) автоматически становятся метками Loki
+  }
+  //stage.labels {                                             // создаёт метки из захваченных групп, которую Grafana использует для корреляции
+  //  values = {
+  //    trace_id = "",                                         // ← из именованной группы regex (?P<trace_id>)
+  //    span_id  = "",                                         // ← из именованной группы regex (?P<span_id>)
+  //  }
+  //}
+  forward_to = [loki.write.default.receiver]
+}

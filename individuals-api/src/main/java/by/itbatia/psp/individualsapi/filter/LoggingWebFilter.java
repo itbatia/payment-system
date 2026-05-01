@@ -24,11 +24,11 @@ public class LoggingWebFilter implements WebFilter {
 
         return RestUtil.getPrincipalUserId()
             .flatMap(userId -> {
-                log.debug("Request on [url={}] from [userId={}]", url, userId);
+                log.debug("Request received on [url={}] from [userId={}]", url, userId);
                 return chain.filter(exchange);
             })
             .switchIfEmpty(Mono.defer(() -> {
-                log.debug("Request on [url={}]", url);
+                log.debug("Request received on [url={}]", url);
                 return chain.filter(exchange);
             }));
     }

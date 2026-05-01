@@ -8,6 +8,7 @@ import by.itbatia.psp.common.dto.IndividualCreateRequest;
 import by.itbatia.psp.individualsapi.client.PersonServiceClient;
 import by.itbatia.psp.individualsapi.dto.TokenResponse;
 import by.itbatia.psp.individualsapi.dto.UserRegistrationRequest;
+import by.itbatia.psp.individualsapi.service.MetricsService;
 import by.itbatia.psp.individualsapi.service.PersonService;
 import by.itbatia.psp.individualsapi.service.UserService;
 import lombok.RequiredArgsConstructor;
@@ -24,6 +25,7 @@ import reactor.core.publisher.Mono;
 public class PersonServiceImpl implements PersonService {
 
     private final UserService userService;
+    private final MetricsService metricsService;
     private final PersonServiceClient personServiceClient;
 
     /**
@@ -32,6 +34,7 @@ public class PersonServiceImpl implements PersonService {
     @Override
     public Mono<TokenResponse> registerWithFallback(IndividualCreateRequest request) {
         return personServiceClient.createIndividual(request)
+            .doOnError(_ -> metricsService.incrementFailedRegistration())
             .flatMap(this::registerWithFallback);
     }
 

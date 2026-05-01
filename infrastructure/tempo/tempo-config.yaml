@@ -7,7 +7,7 @@ distributor:
     otlp:
       protocols:
         grpc:
-          endpoint: "0.0.0.0:4317"                     # Приём OTLP по gRPC (для Collector)
+          endpoint: "0.0.0.0:4317"                     # Приём OTLP по gRPC (для Alloy)
   log_received_spans:
     enabled: true                                      # Для PROD → false. Только для дебага. Включает запись в журнал каждого полученного фрагмента данных
 
@@ -42,7 +42,7 @@ metrics_generator:                                     # Из трейсов →
     external_labels:
       source: tempo
   storage:
-    path: /tmp/tempo/generator/wal                     # Вля PROD → /var/tempo/generator/wal
+    path: /tmp/tempo/generator/wal                     # Для PROD → /var/tempo/generator/wal
     remote_write:                                      # Отправляет метрики в Prometheus
       - url: http://prometheus:9090/api/v1/write       # Туда Tempo шлёт метрики (POST /api/v1/write)
 

@@ -10,6 +10,10 @@ info:
     version: ${project.version}
     description: ${project.description}
 
+logging:
+  level:
+    by.itbatia.psp.personservice.filter.OtelStatusWebFilter: ${LOG_LEVEL_WEB_FILTER}
+
 # ==================================================================================================================== #
 # SPRING config                                                                                                        #
 # ==================================================================================================================== #
@@ -37,6 +41,10 @@ spring:
 # METRICS + OPENTELEMETRY config                                                                                       #
 # ==================================================================================================================== #
 management:
+  metrics:
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true                         # Включает bucket'ы для HTTP-метрик
   prometheus:
     metrics:
       export:
@@ -44,22 +52,26 @@ management:
   endpoints:
     web:
       exposure:
-        include: prometheus, health
+        include: health
   otlp:
     metrics:
       export:
         enabled: ${OTLP_METRICS_EXPORT_ENABLED}
+        batch-size: ${OTLP_METRICS_EXPORT_BATCH_SIZE}
+        url: ${OTLP_METRICS_EXPORT_URL}
+        step: ${OTLP_METRICS_EXPORT_STEP}
   opentelemetry:
     tracing:
       export:
         otlp:
           endpoint: ${OTEL_TRACING_EXPORT_OTLP_ENDPOINT}
+          transport: ${OTEL_TRACING_EXPORT_OTLP_PROTOCOL}
     resource-attributes:
       service.name: ${info.application.name}
   tracing:
     export:
-      enabled: ${TRACING_EXPORT_ENABLED}
+      enabled: ${OTEL_TRACING_EXPORT_ENABLED}
     propagation:
-      type: ${TRACING_PROPAGATION_TYPE}
+      type: ${OTEL_TRACING_PROPAGATION_TYPE}
     sampling:
-      probability: ${TRACING_SAMPLING_PROBABILITY}
+      probability: ${OTEL_TRACING_SAMPLING_PROBABILITY}

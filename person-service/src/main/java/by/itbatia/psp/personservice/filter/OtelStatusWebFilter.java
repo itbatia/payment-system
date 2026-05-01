@@ -40,7 +40,7 @@ public class OtelStatusWebFilter extends OncePerRequestFilter {
                                     @NonNull HttpServletResponse response,
                                     @NonNull FilterChain chain) throws ServletException, IOException {
 
-        log.info("Request on [url={}]", request.getRequestURI());
+        log.info("Request received on [url={}]", request.getRequestURI());
 
         try {
             chain.doFilter(request, response);
