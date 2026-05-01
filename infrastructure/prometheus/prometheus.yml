@@ -1,28 +1,24 @@
 global:
-  scrape_interval: 15s                        # global metrics collection interval
-  scrape_timeout: 10s                         # timeout when requesting metrics
+  scrape_interval: 15s                       # global metrics collection interval
+  scrape_timeout: 10s                        # timeout when requesting metrics
+  evaluation_interval: 15s                   # как часто считаются: alert rules и recording rules
 
-scrape_configs:
-  # ================================================================================================================== #
-  # Prometheus (self-monitoring)                                                                                       #
-  # ================================================================================================================== #
+storage:
+  tsdb:
+    out_of_order_time_window: 10m            # это позволит принимать немного "кривые" данные
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: ['alertmanager:9093']     # для отправки алертов в Alertmanager
+
+remote_write:
+  - url: http://localhost:9090/api/v1/write  # Prometheus будет писать сюда свои метрики
+
+scrape_configs:                              # Prometheus self-monitoring
   - job_name: 'prometheus'
     static_configs:
-      - targets: ['localhost:9090']
+      - targets: [ 'localhost:9090' ]
 
-  # ================================================================================================================== #
-  # Individuals API                                                                                                    #
-  # ================================================================================================================== #
-  - job_name: 'individuals-api'
-    metrics_path: '/actuator/prometheus'      # URL for collecting metrics
-    static_configs:
-      - targets: ['individuals-api:8082']     # docker-compose: service name (de facto: docker DNS -> container IP)
-        labels:
-          app: 'individuals-api'
-          env: 'docker'
-    basic_auth:
-      username: PROMETHEUS
-      password: "P5w9432nlg7y0q3b3g3h47810fm9aa0nc32"
-    relabel_configs:
-      - action: labeldrop                     # removing the "job" label (it's redundant)
-        regex: ^job$
+rule_files:
+  - "alerts.yml"

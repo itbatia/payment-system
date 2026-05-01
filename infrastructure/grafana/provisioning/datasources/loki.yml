@@ -6,3 +6,21 @@ datasources:
     url: http://loki:3100
     access: proxy
     isDefault: false
+    editable: false                                                      # true - можно менять datasource в UI Grafana, false - только через provisioning. DEV-t, PROD-f.
+    jsonData:
+      derivedFields:                                                     # Grafana должна знать, как искать логи по trace_id
+        - name: trace_id
+          matcherRegex: '.*\[([a-f0-9]{32}),[a-f0-9]+\].*'               # Regex for logs: [e28c93b24c174903cb8451b9d82e0ef4,42f88bd8fb82efc0]
+          datasourceUid: TEMPO_DS
+          url: '$${__value.raw}'
+
+# Note for '.*\[([a-f0-9]{32}),[a-f0-9]+\].*'
+#    .*                          — игнорирует всё до [
+#    \[                          — ищет открывающую скобку
+#    (?P<trace_id>[a-f0-9]{32})  — захватывает 32-символьный hex-идентификатор
+#    ,                           — ищет запятую
+#    [a-f0-9]+                   — игнорирует span ID
+#    \]                          — ищет закрывающую скобку
+#    .*                          — игнорирует всё после ']'.
+# Grafana автоматически использует первую группу захвата ($1) как значение для trace_id.
+# Grafana использует JavaScript RegExp для парсинга логов. В JS нет именованных групп (?P<name>), только нумерованные ($1, $2, ...).

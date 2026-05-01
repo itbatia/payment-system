@@ -1,0 +1,64 @@
+# ==================================================================================================================== #
+# BASE config                                                                                                          #
+# ==================================================================================================================== #
+server:
+  port: 8082
+
+logging:
+  level:
+    by.itbatia.psp.individualsapi.service.impl.TokenServiceImpl: DEBUG
+    by.itbatia.psp.individualsapi.filter.LoggingWebFilter: DEBUG
+
+# ==================================================================================================================== #
+# APPLICATION config                                                                                                   #
+# ==================================================================================================================== #
+individuals-api:
+  keycloak:
+    realm: individuals
+    base-url: http://localhost:8080
+    client-id: individuals-api
+    client-secret: 9nekCm9JrhldqeBx5bw00LIzIBRYve6l
+    connection-timeout: 5000
+    admin-token-caching-time-in-sec: 290
+  person-service-client:
+    base-url: http://localhost:8083           # http://person-service:8083
+    connection-timeout: 5000
+
+# ==================================================================================================================== #
+# METRICS + OPENTELEMETRY config                                                                                       #
+# ==================================================================================================================== #
+management:
+  metrics:
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true            # Включает bucket'ы для HTTP-метрик
+  prometheus:
+    metrics:
+      export:
+        enabled: false                        # Отключить Prometheus scraping
+  endpoints:
+    web:
+      exposure:
+        include: health                       # Только для health check
+  otlp:                                       # Экспорт метрик через OTLP в Alloy
+    metrics:
+      export:
+        enabled: true
+        batch-size: 10000
+        url: http://localhost:4318/v1/metrics # http://alloy:4318/v1/metrics
+        step: 10s                             # Интервал отправки OTLP-метрик
+  opentelemetry:                              # Экспорт traces через OTLP в Alloy
+    tracing:
+      export:
+        otlp:
+          endpoint: http://localhost:4317     # http://alloy:4317
+          transport: GRPC
+    resource-attributes:
+      service.name: ${info.application.name}  # здесь будет название сервиса
+  tracing:
+    export:
+      enabled: true
+    propagation:
+      type: w3c
+    sampling:
+      probability: 1.0

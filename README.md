@@ -165,6 +165,35 @@ _Все сервисы должны быть в состоянии Up.
 └── README.md               # Этот файл
 ```
 
+## Observability-стек
+
+```text
+Payment-service APIs
+│
+├── OTLP (трассировки + метрики) ──┐
+│                                  │
+└── stdout (Docker logs) ──────────┤
+                                   ↓
+                              Alloy (collector)
+                                   │
+           ┌───────────────────────┼───────────────────────┐
+           ↓                       ↓                       ↓
+        Tempo                    Loki                   Prometheus
+   (traces / spans)        (structured logs)     (metrics via remote_write)
+           │                       │                       │
+           └───────────────────────┼───────────────────────┘
+                                   ↓
+                                Grafana
+                         (Dashboards + Alerting)
+                                   │
+                                   ↓
+                              Alertmanager
+                                   │
+                  ┌────────────────┴────────────────┐
+                  ↓                                 ↓
+              Telegram                    Grafana (alerting/list)
+```
+
 # Individuals-API
 
 Микросервис, отвечающий за оркестрацию процессов аутентификации пользователей в системе.  
@@ -414,8 +443,14 @@ logging:
 ✅ Запустить все сервисы проекта в фоновом режиме с пересборкой image:  
 `docker-compose up -d --build`
 
+✅ Перезапустить сервис:  
+`docker compose restart service-name`  
+
 ✅ Остановить и удалить контейнеры и сети:  
 `docker-compose down`
+
+✅ Остановить и удалить контейнеры, сети и volume:  
+`docker-compose down -v`
 
 ✅ Посмотреть список и текущее состояние (статус) контейнеров:  
 `docker-compose ps`

@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <property name="LOG_LEVEL" value="${LOG_LEVEL:-INFO}"/>
+    <property name="APP_NAME" value="${info.application.name:-person-service}"/>
+    <property name="LOG_PATTERN" value="%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%X{traceId:-},%X{spanId:-}] ${PID:- } --- [%t] %-40.40logger{39} : %m%n"/>
+
+    <!-- ======================================== -->
+    <!-- Development profiles: TEXT logs          -->
+    <!-- ======================================== -->
+    <springProfile name="!prod &amp; !docker">
+        <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+            <encoder>
+                <pattern>${LOG_PATTERN}</pattern>
+            </encoder>
+        </appender>
+        <root level="${LOG_LEVEL}">
+            <appender-ref ref="CONSOLE"/>
+        </root>
+    </springProfile>
+
+    <!-- ======================================== -->
+    <!-- Production profiles: JSON logs           -->
+    <!-- ======================================== -->
+    <springProfile name="prod | docker">
+        <appender name="JSON_CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+            <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+                <customFields>{"service":"${APP_NAME}"}</customFields>
+                <includeMdcKeyName>traceId</includeMdcKeyName>
+                <includeMdcKeyName>spanId</includeMdcKeyName>
+                <mdcKeyFieldNames>
+                    <traceId>trace_id</traceId>
+                    <spanId>span_id</spanId>
+                </mdcKeyFieldNames>
+            </encoder>
+        </appender>
+        <root level="${LOG_LEVEL}">
+            <appender-ref ref="JSON_CONSOLE"/>
+        </root>
+    </springProfile>
+
+</configuration>
+
+<!-- Notes:                                                                                                                              -->
+<!--     MDC (Mapped Diagnostic Context). OpenTelemetry put in MDC: traceId & spanId.                                                    -->
+<!--     Before: "%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level                              ${PID:- } -&#45;&#45; [%t] %-40.40logger{39} : %m%n" -->
+<!--     After:  "%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%X{traceId:-},%X{spanId:-}] ${PID:- } -&#45;&#45; [%t] %-40.40logger{39} : %m%n" -->
+
+<!-- Without MDC:                                                                                                                        -->
+<!--     {                                                                                                                               -->
+<!--         "message": "request processed",                                                                                             -->
+<!--         "level": "INFO"                                                                                                             -->
+<!--     }                                                                                                                               -->
+<!-- With MDC:                                                                                                                           -->
+<!--     {                                                                                                                               -->
+<!--         "message": "request processed",                                                                                             -->
+<!--         "traceId": "abc123",                                                                                                        -->
+<!--         "spanId": "def456",                                                                                                         -->
+<!--         "level": "INFO"                                                                                                             -->
+<!--     }                                                                                                                               -->
+
+<!-- Strong control:                                                                                                                     -->
+<!--     instead of <includeMdc>true</includeMdc> uses:                                                                                  -->
+<!--     <includeMdc>false</includeMdc>                                                                                                  -->
+<!--     <includeMdcKeyName>traceId</includeMdcKeyName>                                                                                  -->
+<!--     <includeMdcKeyName>spanId</includeMdcKeyName>                                                                                   -->
+
+<!-- <includeMdc>true</includeMdc>                  -> add all MDC fields to JSON                                                        -->
+<!-- <mdcKeyFieldNames>                             -> rename keys                                                                       -->
+<!-- <includeMdcKeyName>traceId</includeMdcKeyName> -> add target MDC fields to JSON                                                     -->
+<!-- WARN: traceId and spanId put the OpenTelemetry                                                                                      -->

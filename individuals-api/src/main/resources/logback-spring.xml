@@ -2,7 +2,7 @@
 <configuration>
     <property name="LOG_LEVEL" value="${LOG_LEVEL:-INFO}"/>
     <property name="APP_NAME" value="${info.application.name:-individuals-api}"/>
-    <property name="LOG_PATTERN" value="%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level ${PID:- } --- [%15.15t] %-40.40logger{39} : %m%n"/>
+    <property name="LOG_PATTERN" value="%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%X{traceId:-},%X{spanId:-}] ${PID:- } --- [%t] %-40.40logger{39} : %m%n"/>
 
     <!-- ======================================== -->
     <!-- Development profiles: TEXT logs          -->
@@ -24,7 +24,7 @@
     <springProfile name="prod | docker">
         <appender name="JSON_CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
             <encoder class="net.logstash.logback.encoder.LogstashEncoder">
-                <customFields>{"app":"${APP_NAME}"}</customFields>
+                <customFields>{"service":"${APP_NAME}"}</customFields>
             </encoder>
         </appender>
         <root level="${LOG_LEVEL}">

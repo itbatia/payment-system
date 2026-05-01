@@ -1,0 +1,358 @@
+// =====================================================================================================================
+// 📌 1 - RECEIVERS (Приём OTLP от Spring Boot)
+// =====================================================================================================================
+
+otelcol.receiver.otlp "default" {
+  grpc {
+    endpoint = "0.0.0.0:4317"                                // По умолчанию Alloy слушает gRPC на 0.0.0.0:4317 (явно можно не указывать)
+  }
+  http {
+    endpoint = "0.0.0.0:4318"                                // По умолчанию Alloy слушает HTTP/JSON на 0.0.0.0:4318 (явно можно не указывать)
+  }
+  output {
+    metrics = [otelcol.processor.memory_limiter.default.input] // 1. Приём OTLP-метрик
+    traces  = [otelcol.processor.memory_limiter.default.input]
+  }
+}
+
+
+// =====================================================================================================================
+// 📌 2 - PROCESSORS (memory_limiter, filter, sampling, batch)
+// =====================================================================================================================
+
+// ------------------------------------------   Защита от Out-Of-Memory   ------------------------------------------- //
+
+otelcol.processor.memory_limiter "default" {
+  check_interval = "1s"                                      // Как часто следует проверять использование памяти.
+  limit_percentage = 80                                      // Максимальный общий объем доступной памяти для heap. При использовании >80% RAM - начинает отбрасывать данные.
+  spike_limit_percentage = 90                                // Разрешать кратковременные пики до 90% от общей RAM между измерениями использования памяти.
+
+  output {
+    metrics = [otelcol.processor.batch.default.input]        // 2. Memory limiter
+    traces  = [otelcol.processor.filter.drop_noise.input]
+  }
+}
+
+// Пример:
+// Если 16 ГБ RAM:
+//    limit_percentage       - 80% - 12.8 ГБ
+//    spike_limit_percentage - 90% - 14.4 ГБ
+// При таком раскладе:
+//    При           ≥ 12.8 ГБ — начинается дроп данных,
+//    При всплеске до 15.2 ГБ — данные ещё принимаются,
+//    При           > 15.2 ГБ — жёсткий дроп.
+
+
+// ---------------------------------------------   Фильтрация мусора   ---------------------------------------------- //
+
+otelcol.processor.filter "drop_noise" {                      // Убираем все мусорные запросы /actuator/* и /swagger*
+  error_mode = "ignore"                                      // Как реагировать на ошибки, возникающие при обработке запроса.
+  traces {
+    span = [
+      `IsMatch(attributes["http.url"], "^/actuator/.*")`,
+      `IsMatch(attributes["http.url"], "^/swagger.*")`,
+    ]
+  }
+  output {
+    traces = [otelcol.processor.tail_sampling.sampling.input]
+  }
+}
+
+// error_mode:
+//  - ignore:    Игнорировать ошибки, возвращаемые условиями, регистрировать их и переходить к следующему условию. Это рекомендуемый режим.
+//  - silent:    Игнорировать ошибки, возвращаемые условиями, не регистрировать их и переходить к следующему условию.
+//  - propagate: Возвращать ошибку вверх по конвейеру. Это приведет к удалению полезной нагрузки из Alloy.
+
+
+// --------------------------------------------------   Sampling   -------------------------------------------------- //
+
+otelcol.processor.tail_sampling "sampling" {                 // tail-based sampling (выборка после завершения трейса).
+  decision_wait = "10s"                                      // Collector ждёт 10 секунд все span’ы трейса → принимает решение (default "30s"). Это будет задержкой появления трейса в Grafana.
+  num_traces = 50000                                         // Буфер - количество трасс, хранящихся в памяти (default 50000). Важно при нагрузке.
+
+  policy {                                                   // 🔴 ошибки - всегда сохраняем. Ловим все официальные ошибки (включая исключения).
+    name = "errors"                                          // Пользовательское название policy.
+    type = "status_code"                                     // Допустимый тип policy.
+    status_code {
+      status_codes = ["ERROR"]                               // Т.к. не все ошибки проходят через http.status (status_code=ERROR словит больше ошибок).
+    }
+  }
+
+  policy {                                                   // 🔴 ошибки - всегда сохраняем. Ловим конкретные HTTP-статусы.
+    name = "http_errors"                                     // Пользовательское название policy.
+    type = "numeric_attribute"                               // Допустимый тип policy.
+    numeric_attribute {
+      key = "http.status"                                    // http.status - custom attribute.
+      min_value = 400                                        // Минимальное значение атрибута, которое считается совпадением (400,401,403,404,405,409).
+      max_value = 504                                        // Максимальное значение атрибута, которое считается совпадением (500,502,503,504).
+    }
+  }
+
+  policy {                                                   // 🐢 медленные запросы (> 1 сек) - всегда сохраняем.
+    name = "slow"                                            // Пользовательское название policy.
+    type = "latency"                                         // Допустимый тип policy.
+    latency {
+      threshold_ms = 1000                                    // 1000 → для запросов > 1 сек.
+      upper_threshold_ms = 0                                 //    0 → без верхнего лимита.
+    }
+  }
+
+  policy {                                                   // 💰 важный endpoint - всегда сохраняем.
+    name = "important"                                       // Пользовательское название policy.
+    type = "string_attribute"                                // Допустимый тип policy.
+    string_attribute {
+      key = "http.url"
+      values = ["/api/v1/auth/registration"]
+    }
+  }
+
+  policy {                                                   // 🎲 всё остальное — сохраняется с вероятностью 10% (100% для DEV / 10% для PROD).
+    name = "probabilistic"                                   // Пользовательское название policy.
+    type = "probabilistic"                                   // Допустимый тип policy.
+    probabilistic {
+      sampling_percentage = 10
+    }
+  }
+
+  output {
+    traces = [otelcol.processor.batch.default.input]
+  }
+}
+
+// Note:
+// Policy: supported type values include:
+// always_sample, latency, numeric_attribute, probabilistic, status_code, string_attribute, rate_limiting,
+// bytes_limiting, span_count, trace_state, boolean_attribute, ottl_condition, trace_flags, and, not, drop, composite.
+
+// --------------------------------------------   Оптимизация отправки   -------------------------------------------- //
+
+otelcol.processor.batch "default" {
+  timeout = "200ms"                                          // Сколько времени нужно подождать перед flushing the batch. Default = "200ms"
+  send_batch_size = 2000                                     // Количество spans, logs, metrics которые запускают отправку пакета данных. Default = 2000
+
+  output {
+    traces  = [otelcol.exporter.otlp.tempo.input]
+    metrics = [otelcol.exporter.prometheus.metrics.input]    // 3. Batch для метрик
+  }
+}
+
+
+// =====================================================================================================================
+// 📌 3 - EXPORTERS
+// =====================================================================================================================
+
+otelcol.exporter.otlp "tempo" {                              // Отправляет трейсы в Tempo по OTLP/gRPC
+  client {
+    endpoint = "tempo:4317"                                  // Без 'http://' — это gRPC (gRPC использует host:port, не URL).
+    tls {
+      insecure = true
+    }
+  }
+
+  sending_queue {                                            // Настройка постановки в очередь и пакетной обработки данных перед отправкой.
+    enabled = true                                           // Включает буфер перед отправкой данных клиенту.
+    num_consumers = 10                                       // Ридеры могут отправлять пакеты данных, записанных в очередь, параллельно (default 10).
+    queue_size = 5000                                        // Максимально допустимое количество незаписанных партий, одновременно находящихся в очереди (default 1000).
+  }
+
+  retry_on_failure {                                         // Механизм повторных попыток для неудачных запросов.
+    enabled = true                                           // Позволяет повторно отправлять неудачные запросы.
+    initial_interval = "5s"                                  // Начальное время ожидания перед повторной попыткой выполнения неудачного запроса (default "5s").
+    max_interval = "30s"                                     // Максимальное время ожидания между повторными попытками (default "30s").
+    max_elapsed_time = "300s"                                // Максимальное время ожидания перед отбраковкой неудачной партии (default "300s". При "0s" - бесконечно).
+  }
+}
+
+// Note:
+// sending_queue:
+//    - Создаёт внутреннюю очередь в exporter'е,
+//    - Позволяет пережить кратковременные сбои Tempo (например, рестарт),
+//    - Буферизует данные, если Tempo временно недоступен.
+// retry_on_failure:
+//    - Автоматически повторяет неудачные запросы к Tempo,
+//    - Использует экспоненциальную задержку (initial_interval, max_interval),
+//    - Гарантирует доставку при временных сетевых проблемах.
+//      Без retry_on_failure любой таймаут или ошибка сети → потеря данных.
+// Обеспечение полноценной отказоустойчивой доставки:
+//      [Batch] → [Sending Queue] → [Retry on Failure] → Tempo
+//    1. Batch собирает спаны в пакеты,
+//    2. Sending Queue ставит пакеты в очередь,
+//    3. Retry on Failure повторяет отправку при ошибках.
+
+
+otelcol.exporter.prometheus "metrics" {                      // 4. Экспорт OTLP → Prometheus (мост)
+  forward_to = [prometheus.relabel.add_service.receiver]     // bridge: otelcol.processor.batch ожидает otelcol.Consumer, а prometheus.remote_write — это НЕ otelcol компонент
+}
+
+prometheus.relabel "add_service" {                           // 5. Добавление метки 'service'
+  rule {
+    source_labels = ["job"]
+    target_label  = "service"
+  }
+  forward_to = [prometheus.remote_write.default.receiver]
+}
+
+prometheus.remote_write "default" {                          // 6. Пушит метрики в Prometheus через remote_write
+  endpoint {                                                 // (prometheus.yml → scrape не нужен → он НЕ ходит в Alloy)
+    url = "http://prometheus:9090/api/v1/write"
+  }
+}
+
+
+// =====================================================================================================================
+// 📌 LOGS
+// =====================================================================================================================
+
+// ---------------------------------------------------------------------------------------------------------------------
+// 🔹 1. Discovery: обнаружение контейнеров Docker Engine и предоставляет к ним доступ в качестве целевых объектов.
+// ---------------------------------------------------------------------------------------------------------------------
+
+discovery.docker "containers" {
+  host = "unix:///var/run/docker.sock"                       // Linux/macOS. Windows: "tcp://host.docker.internal:2375"
+  refresh_interval = "1m"                                    // Частота обновления списка контейнеров (дефолт "1m")
+}
+
+
+// ---------------------------------------------------------------------------------------------------------------------
+// 🔹 2. Relabeling: фильтрация + Преобразование метаданных Docker в метки Loki.
+// ---------------------------------------------------------------------------------------------------------------------
+
+discovery.relabel "containers" {
+  targets = discovery.docker.containers.targets              // Источник
+
+  // Фильтрация: оставляем только нужные сервисы
+  rule {
+    source_labels = ["__meta_docker_container_label_com_docker_compose_service"]
+    regex        = "individuals-api|person-service"
+    action       = "keep"
+  }
+
+  // Метка: service = имя сервиса из compose. Создаёт метку {service="individuals-api"} — основная метка для запросов в Grafana.
+  rule {
+    source_labels = ["__meta_docker_container_label_com_docker_compose_service"]
+    target_label  = "service"
+  }
+
+  // Метка: container = имя контейнера. Создаёт метку {container="individuals-api-1"} для фильтрации по имени контейнера.
+  rule {
+    source_labels = ["__meta_docker_container_name"]
+    regex         = "/?(.+)"
+    target_label  = "container"
+  }
+
+  // Метка: project = имя проекта из compose. Создаёт метку {project="payment-system"} для разных проектов.
+  rule {
+    source_labels = ["__meta_docker_container_label_com_docker_compose_project"]
+    target_label  = "project"
+  }
+}
+
+// Note:
+// Relabeling (#2) + parse_trace_context (#4) формирует label scope:
+//    project   = "payment-system"
+//    service   = "individuals-api"
+//    container = "individuals-api-1"
+//    trace_id  = "e28c93..."
+//    span_id   = "e28c93..."
+
+
+// ---------------------------------------------------------------------------------------------------------------------
+// 🔹 3. Источник логов: читает stdout контейнеров
+// ---------------------------------------------------------------------------------------------------------------------
+
+loki.source.docker "containers" {
+  host       = "unix:///var/run/docker.sock"                 // Linux/macOS. Windows: "tcp://host.docker.internal:2375"
+  targets    = discovery.relabel.containers.output           // Pipeline: from
+  forward_to = [loki.process.parse_trace_context.receiver]   // Pipeline: to
+}
+
+
+// ---------------------------------------------------------------------------------------------------------------------
+// 🔹 4. Парсинг trace_id и span_id
+// ---------------------------------------------------------------------------------------------------------------------
+loki.process "parse_trace_context" {                         // Это даёт в Grafana (по клику): Logs → Trace, Trace → Logs
+  stage.regex {                                              // Извлекает группы захвата (лог: [traceId,spanId])
+    expression = ".*\\[(?P<trace_id>[a-f0-9]{32}),(?P<span_id>[a-f0-9]+)\\].*"
+    labels_from_groups = true                                // Именованные группы захвата ((?P<trace_id>...) и (?P<span_id>...)) автоматически
+  }                                                          // становятся метками Loki, которые Grafana использует для корреляции
+  forward_to = [loki.write.default.receiver]
+}
+
+// Note. Что делает step 4:
+// ===   1) Парсит строку лога.                                                  ===
+// ===   2) Извлекает traceId и spanId из лога вида [ba336a35...,a8128602...].   ===
+// ===   3) Добавляет их как метки trace_id и span_id в Loki.                    ===
+// ===   4) Эти метки станут доступны для фильтрации в Grafana.                  ===
+// ===   Без этого:                                                              ===
+// ===      - Grafana не сможет связать логи и трейсы;                           ===
+// ===      - Кнопка «Show logs» в трейсе будет пустой.                          ===
+// ===   С этим:                                                                 ===
+// ===      - Можно кликнуть на span в Tempo → увидеть все логи этого запроса;   ===
+// ===      - Можно найти логи по trace_id в Grafana → Explore → Loki.           ===
+// ===   Искать и по trace_id, и по span_id -> Enterprise-level                  ===
+
+
+// ---------------------------------------------------------------------------------------------------------------------
+// 🔹 5. Экспорт в Loki: пушит логи в Loki
+// ---------------------------------------------------------------------------------------------------------------------
+
+loki.write "default" {
+  endpoint {
+    url = "http://loki:3100/loki/api/v1/push"                // Полный URL-адрес для отправки логов.
+    batch_size = "1MiB"                                      // Максимальный размер пакета логов, который можно накопить перед отправкой (default = "1MiB").
+    batch_wait = "1s"                                        // Максимальное время ожидания перед отправкой пакета (default = "1s").
+  }
+}
+
+
+// =====================================================================================================================
+// 📌 ALLOY METRICS
+// =====================================================================================================================
+
+prometheus.scrape "alloy_internal" {
+  targets    = [{ "__address__" = "127.0.0.1:12345" }]
+  forward_to = [prometheus.remote_write.default.receiver]
+}
+
+// Шаг 1: Alloy сам экспонирует метрики
+//        Alloy внутренне запускает HTTP-сервер на :12345/metrics,
+//        Этот эндпоинт отдаёт Prometheus-формат метрик о самом Alloy:
+//          - Потребление памяти,
+//          - Количество обработанных логов/трейсов,
+//          - Ошибки, latency и т.д.
+// Шаг 2: prometheus.scrape читает эти метрики
+//        Компонент prometheus.scrape делает HTTP GET-запрос к http://127.0.0.1:12345/metrics,
+//        Получает текст в формате Prometheus,
+//        Преобразует его во внутренний формат Alloy.
+// Шаг 3: forward_to отправляет метрики дальше
+//        Метрики передаются в prometheus.remote_write.default,
+//        Который пушит их в ваш Prometheus через remote_write.
+
+
+// =====================================================================================================================
+// 📌 ALLOY DOCS
+// =====================================================================================================================
+// =====================================================================================================================
+// Alloy Overview             - https://grafana.com/docs/alloy/latest/
+// Configure Alloy            - https://grafana.com/docs/alloy/latest/configure/
+// Run Alloy in Docker        - https://grafana.com/docs/alloy/latest/set-up/install/docker/
+//
+// RECEIVERS
+//    otlp                    - https://grafana.com/docs/alloy/latest/reference/components/otelcol/otelcol.receiver.otlp/
+// PROCESSORS:
+//    memory_limiter          - https://grafana.com/docs/alloy/latest/reference/components/otelcol/otelcol.processor.memory_limiter/
+//    filter                  - https://grafana.com/docs/alloy/latest/reference/components/otelcol/otelcol.processor.filter/
+//    tail_sampling           - https://grafana.com/docs/alloy/latest/reference/components/otelcol/otelcol.processor.tail_sampling/
+//    batch                   - https://grafana.com/docs/alloy/latest/reference/components/otelcol/otelcol.processor.batch/
+// EXPORTERS
+//    OTLP exporter           - https://grafana.com/docs/alloy/latest/reference/components/otelcol/otelcol.exporter.otlp/
+//    Prometheus remote_write - https://grafana.com/docs/alloy/latest/reference/components/prometheus/prometheus.remote_write/
+// LOGS:
+//    1) discovery.docker     - https://grafana.com/docs/alloy/latest/reference/components/discovery/discovery.docker/
+//    2) discovery.relabel    - https://grafana.com/docs/alloy/latest/reference/components/discovery/discovery.relabel/
+//    3) source.docker        - https://grafana.com/docs/alloy/latest/reference/components/loki/loki.source.docker/
+//    4) loki.process         - https://grafana.com/docs/alloy/latest/reference/components/loki/loki.process/
+//    5) loki.write           - https://grafana.com/docs/alloy/latest/reference/components/loki/loki.write/
+// ALLOY METRICS:
+//    prometheus.scrape       - https://grafana.com/docs/alloy/latest/reference/components/prometheus/prometheus.scrape/
+// =====================================================================================================================
