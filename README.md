@@ -455,8 +455,9 @@ logging:
 `./gradlew clean :individuals-api:bootJar :person-service:bootJar`
 
 ✅ Пересобрать Java-код на основе OpenAPI-спецификации (блок openApiGenerate):  
+`./gradlew :common:clean :common:openApiGenerate`
+`./gradlew :person-service:clean :person-service:openApiGenerate`
 `./gradlew :individuals-api:clean :individuals-api:openApiGenerate`  
-`./gradlew :person-service:clean :person-service:openApiGenerateAll`
 `./gradlew clean :individuals-api:openApiGenerate :person-service:openApiGenerateAll`
 
 ✅ Выведет полное дерево зависимостей с указанием фактических версий, выбранных Spring Boot BOM:  

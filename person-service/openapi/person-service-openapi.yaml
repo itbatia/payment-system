@@ -1,0 +1,330 @@
+openapi: 3.0.3
+info:
+  title: Person Service API
+  version: 1.0.0
+  description: |
+    Internal REST API for managing persons (users, individuals, addresses) in the payment-system.
+    This service is **not public** — it is called exclusively by `individuals-api` orchestrator.
+    All operations are transactional and support Hibernate Envers audit history.
+
+servers:
+  - url: http://localhost:8083/api/v1
+    description: Local development server
+
+tags:
+  - name: Individuals
+    description: CRUD operations for persons (user + individual + address)
+
+########################################################################################################################
+###########################                         Individuals Api                          ###########################
+########################################################################################################################
+
+paths:
+  /individuals:
+    post:
+      operationId: create
+      summary: Create a new individual
+      description: |
+        Creates a new person with associated individual, and address records in a single transaction.
+
+        **Validation rules:**
+        - Email must be in valid format and unique across the system
+        - First and last names are required
+        - Address must include country (ISO alpha2), city, zip code, and address line
+        - Country must exist in the `countries` reference table
+
+        **How it works:**
+        1. The service validates input data.
+        2. It inserts records into `users`, `addresses`, and `individuals` tables atomically.
+        3. On success, returns full person profile including resolved country details.
+        4. All created entities are assigned UUIDs (`id` fields).
+
+        **Error scenarios:**
+        - `400 Bad Request`: Missing or invalid fields (e.g., malformed email, missing address)
+        - `409 Conflict`: Person with this email already exists
+
+        **Security note:**
+        This endpoint is **internal only** and should not be exposed to external clients.
+        It is protected by network-level isolation (e.g., Docker internal network).
+      tags:
+        - Individuals
+      parameters:
+        - $ref: '#/components/parameters/XRequestInitiatorHeader'
+      requestBody:
+        $ref: '#/components/requestBodies/IndividualCreateRequestBody'
+      responses:
+        '201':
+          $ref: '#/components/responses/SuccessfulIndividualResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+    put:
+      operationId: update
+      summary: Update individual
+      description: |
+        Updates an existing Individual's data (first name, last name, contact info, address, etc).
+
+        **Validation rules:**
+        - Only non-null fields are updated (partial updates supported)
+        - Address and User fields can be updated independently
+        - Country must still exist in reference table
+
+        **Audit note:**
+        All changes are automatically tracked by Hibernate Envers. Historical versions can be retrieved via separate audit endpoints (not part of this spec).
+
+        **Error scenarios:**
+        - `400 Bad Request`: Invalid field values
+        - `404 Not Found`: Individual does not exist
+      tags:
+        - Individuals
+      parameters:
+        - $ref: '#/components/parameters/XRequestInitiatorHeader'
+      requestBody:
+        $ref: '#/components/requestBodies/IndividualUpdateRequestBody'
+      responses:
+        '200':
+          $ref: '#/components/responses/SuccessfulIndividualResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /individuals/{id}:
+    get:
+      operationId: getById
+      summary: Get individual by ID
+      description: |
+        Retrieves an individual by his UUID, including full user, address and country details.
+
+        **Error scenarios:**
+        - `404 Not Found`: No individual exists with the given ID
+      tags:
+        - Individuals
+      parameters:
+        - $ref: '#/components/parameters/IndividualIdParam'
+      responses:
+        '200':
+          $ref: '#/components/responses/SuccessfulIndividualResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    delete:
+      operationId: delete
+      summary: Delete individual
+      description: |
+        Soft-deletes a individual by marking related records as archived.
+        Actual database rows are not removed (to preserve audit history).
+
+        **Note:** This operation is irreversible from the API perspective.
+
+        **Error scenarios:**
+        - `404 Not Found`: Individual does not exist
+      tags:
+        - Individuals
+      parameters:
+        - $ref: '#/components/parameters/IndividualIdParam'
+        - $ref: '#/components/parameters/XRequestInitiatorHeader'
+      responses:
+        '204':
+          description: Individual deleted (archived)
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /individuals/email/{email}:
+    get:
+      operationId: getByEmail
+      summary: Get individual by email
+      description: |
+        Retrieves an individual by his user email.
+
+        **Use case:** Used by `individuals-api` during registration to check for duplicates.
+
+        **Error scenarios:**
+        - `404 Not Found`: No individual with this user email
+      tags:
+        - Individuals
+      parameters:
+        - name: email
+          in: path
+          required: true
+          schema:
+            type: string
+            format: email
+          example: "john.doe@example.com"
+      responses:
+        '200':
+          $ref: '#/components/responses/SuccessfulIndividualResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+########################################################################################################################
+###############################            components -> parameters: Examples            ###############################
+########################################################################################################################
+
+components:
+  parameters:
+
+    IndividualIdParam:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+      example: "a1b2c3d4-e5f6-7890-g1h2-i3j4k5l6m7n8"
+      description: Identifier of the Individual entity
+
+    XRequestInitiatorHeader:
+      name: X-Request-Initiator
+      in: header
+      required: true
+      schema:
+        type: string
+      example: "Ivanov_AV"
+      description: Identifier of the user or system performing the update (e.g., username, email, UUID, service name)
+
+########################################################################################################################
+###############################          components -> requestBodies: Examples           ###############################
+########################################################################################################################
+
+  requestBodies:
+    IndividualCreateRequestBody:
+      description: Individual creation request
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../../common/openapi/common-openapi.yaml#/components/schemas/IndividualCreateRequest'
+          examples:
+            ValidIndividualCreation:
+              summary: Example of a valid individuals creation
+              description: |
+                **Field requirements:**
+                - `email`: valid email format (e.g., user@example.com)
+                - `password`: at least 8 characters, including uppercase, lowercase, and digits
+                - `confirm_password`: must exactly match `password`
+              value:
+                passport_number: "AB1234567"
+                phone_number: "+375291234567"
+                user:
+                  email: "john.doe@example.com"
+                  password: "SecurePass123!"
+                  confirm_password: "SecurePass123!"
+                  first_name: "John"
+                  last_name: "Doe"
+                  address:
+                    country_id: 1
+                    address: "Nezavisimosti Ave, 100"
+                    zip_code: "220030"
+                    city: "Minsk"
+                    state: "Minsk Region"
+
+    IndividualUpdateRequestBody:
+      description: Individual update request (partial update supported)
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../../common/openapi/common-openapi.yaml#/components/schemas/IndividualUpdateRequest'
+          examples:
+            UpdateExample:
+              summary: Update individual data
+              value:
+                id: "a1b2c3d4-e5f6-7890-g1h2-i3j4k5l6m7n8"
+                passport_number: "AB1234567"
+                phone_number: "+375291234567"
+                user:
+                  id: "5fb63fc0-a7bc-45e7-973c-b7f99758f926"
+                  email: "john.doe@example.com"
+                  password: "SecurePass123!"
+                  confirm_password: "SecurePass123!"
+                  first_name: "John"
+                  last_name: "Doe"
+                  address:
+                    country_id: 1
+                    address: "Nezavisimosti Ave, 100"
+                    zip_code: "220030"
+                    city: "Minsk"
+                    state: "Minsk Region"
+
+########################################################################################################################
+############################               components -> responses: Examples                ############################
+########################################################################################################################
+
+  responses:
+    BadRequest:
+      description: Bad Request (validation failed)
+      content:
+        application/json:
+          schema:
+            $ref: '../../common/openapi/common-openapi.yaml#/components/schemas/ErrorResponse'
+          examples:
+            InvalidEmail:
+              summary: Malformed email
+              value:
+                error: "Email must be a valid email address"
+                status: 400
+            MissingField:
+              summary: Required field missing
+              value:
+                error: "user field is required"
+                status: 400
+
+    NotFound:
+      description: Individual not found
+      content:
+        application/json:
+          schema:
+            $ref: '../../common/openapi/common-openapi.yaml#/components/schemas/ErrorResponse'
+          examples:
+            IndividualNotFound:
+              summary: No individual with given ID/email
+              value:
+                error: "Individual not found"
+                status: 404
+
+    Conflict:
+      description: Individual with this email already exists
+      content:
+        application/json:
+          schema:
+            $ref: '../../common/openapi/common-openapi.yaml#/components/schemas/ErrorResponse'
+          examples:
+            EmailConflict:
+              summary: Duplicate email
+              value:
+                error: "Individual with email 'john.doe@example.com' already exists"
+                status: 409
+
+    SuccessfulIndividualResponse:
+      description: Response when Individual was created/updated or found by ID/user email
+      content:
+        application/json:
+          schema:
+            $ref: '../../common/openapi/common-openapi.yaml#/components/schemas/IndividualResponse'
+          examples:
+            SuccessfulCreation:
+              summary: Full person profile returned
+              value:
+                id: "a1b2c3d4-e5f6-7890-g1h2-i3j4k5l6m7n8"
+                passport_number: "AB1234567"
+                phone_number: "+375291234567"
+                user:
+                  id: "b2c3d4e5-f6g7-8901-h2i3-j4k5l6m7n8o9"
+                  email: "john.doe@example.com"
+                  first_name: "John"
+                  last_name: "Doe"
+                  filled: true
+                  address:
+                    id: "b2c3d4e5-f6g7-8901-h2i3-j4k5l6m7n8o9"
+                    address: "Nezavisimosti Ave, 100"
+                    zip_code: "220030"
+                    city: "Minsk"
+                    state: "Minsk Region"
+                    country:
+                      id: 123
+                      name: "Belarus"
+                      alpha2: "BY"
+                      alpha3: "BLR"

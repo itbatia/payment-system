@@ -3,10 +3,10 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 plugins {
-    java
+    java                                    // Компилирует код, создаёт JAR
     id("org.springframework.boot")
-    id("io.spring.dependency-management")
-    id("org.openapi.generator")
+    id("io.spring.dependency-management")   // Управление зависимостями
+    id("org.openapi.generator")             // Генерация DTO из OpenAPI
 }
 
 java {
@@ -74,8 +74,7 @@ dependencies {
     testAnnotationProcessor("org.projectlombok:lombok:${project.property("lombokVersion")}")
 
     // PSP projects
-    implementation(project(":common")) // from local
-    // implementation("by.itbatia.psp:common:${project.property("commonVersion")}") // from Nexus
+    implementation("by.itbatia.psp:common:${project.property("commonVersion")}") // from Nexus. From local: implementation(project(":common"))
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -94,12 +93,12 @@ tasks.named("processResources") {
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//////                                          Генерация DTO из OpenAPI                                          //////
+//////                                       Генерация DTO и API из OpenAPI                                       //////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 openApiGenerate {
     generatorName.set("spring")
-    inputSpec.set("$rootDir/individuals-api/openapi/individuals-api.yaml")
+    inputSpec.set("$rootDir/individuals-api/openapi/individuals-api-openapi.yaml")
     outputDir.set(layout.buildDirectory.dir("generated-sources/openapi").get().asFile.absolutePath)
     modelPackage.set("by.itbatia.psp.individualsapi.dto")
     apiPackage.set("by.itbatia.psp.individualsapi.api")
@@ -125,7 +124,7 @@ openApiGenerate {
 
     globalProperties.set(
         mapOf(
-            "models" to "TokenRefreshRequest, TokenResponse, UserInfoResponse, UserLoginRequest", // ← включить генерацию DTO
+            "models" to "TokenRefreshRequest, TokenResponse, UserInfoResponse, UserLoginRequest", // ← включить генерацию целевых DTO
             "apis" to "",                           // ← включить генерацию API (""=all)
             "supportingFiles" to "false"            // ← не включить генерацию Utils (-ApiUtil)
         )
@@ -166,7 +165,16 @@ tasks.named("compileJava") {
 //////                                    Очистка пустых артефактов генерации                                     //////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-// Удаляем пустые сгенерированные директории:
+tasks.register("deleteOpenApiMeta") {
+    doLast {
+        val metaDir = file("$rootDir/individuals-api/build/generated-sources/openapi/.openapi-generator")
+        if (metaDir.exists()) {
+            metaDir.deleteRecursively()
+            println("Deleted .openapi-generator metadata folder")
+        }
+    }
+}
+
 tasks.register("deleteGeneratedEmptyDirs") {
     doLast {
         val genDir = layout.buildDirectory.dir("generated-sources/openapi/src/main/java").get().asFile
@@ -185,6 +193,7 @@ tasks.register("deleteGeneratedEmptyDirs") {
 }
 
 tasks.named("openApiGenerate") {
+    finalizedBy(tasks.named("deleteOpenApiMeta"))
     finalizedBy(tasks.named("deleteGeneratedEmptyDirs"))
 }
 
