@@ -25,10 +25,6 @@ configurations {
     }
 }
 
-repositories {
-    mavenCentral()
-}
-
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //////                                             Публикация в Nexus                                             //////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -38,8 +34,8 @@ publishing {
         maven {
             url = uri("http://localhost:8081/repository/maven-releases/")
             credentials {
-                username = "admin"
-                password = "admin-password"
+                username = providers.gradleProperty("nexusUsername").toString()
+                password = providers.gradleProperty("nexusPassword").toString()
             }
             withGroovyBuilder {
                 setProperty("allowInsecureProtocol", true)

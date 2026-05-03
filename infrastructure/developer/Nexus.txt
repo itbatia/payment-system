@@ -12,14 +12,48 @@ admin-password
 5. Измените его значение с:                    ❌ Disable Redeploy
                         на:                    ✅ Allow Redeploy
 6. Нажмите Save
-========================================================================================================================
-
 
 ========================================================================================================================
 
+Менял:
+
+#  echo "Deleting default admin user..."
+#  curl -f -u "$NEW_USER:$NEW_PASS" \
+#    -X DELETE \
+#    "$NEXUS_URL/service/rest/v1/security/users/admin"
+#  echo "Default admin user deleted"
+
+  echo "Disabling default admin user..."
+  curl -f -u "$NEW_USER:$NEW_PASS" \
+    -X PUT \
+    -H "Content-Type: application/json" \
+    -d '{
+      "userId": "admin",
+      "firstName": "Administrator",
+      "lastName": "User",
+      "emailAddress": "admin@example.org",
+      "source": "default",
+      "status": "disabled",
+      "roles": ["nx-admin"]
+    }' \
+    "$NEXUS_URL/service/rest/v1/security/users/admin"
 
 ========================================================================================================================
 
+maven_releases.json:
+
+writePolicy:
+  - "ALLOW" — разрешает загрузку, но не перезапись,
+  - "ALLOW_ONCE" — разрешает загрузку только один раз (по умолчанию для RELEASE),
+  - "DENY" — запрещает запись.
+В Nexus OSS (Community Edition) опция ALLOW_REDEPLOY не поддерживается.
+Она доступна только в Nexus Repository Manager Pro
+
+========================================================================================================================
+
+Проверка, доступен ли артефакт по HTTP:
+
+curl -u admin123:admin123 http://localhost:8081/repository/maven-public/by/itbatia/psp/common/1.0.0/common-1.0.0.pom
 
 ========================================================================================================================
 
