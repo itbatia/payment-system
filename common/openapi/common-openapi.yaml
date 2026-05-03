@@ -1,0 +1,312 @@
+openapi: 3.0.3
+
+info:
+  title: Common
+  description: Общий модуль, содержит только DTO, сгенерированные из OpenAPI (без бизнес-логики).
+  version: 1.0.0
+
+paths: {}
+
+########################################################################################################################
+##########################              components -> schemas: Create Requests               ###########################
+########################################################################################################################
+
+components:
+  schemas:
+
+    IndividualCreateRequest:
+      type: object
+      required: [ user ]
+      properties:
+        passport_number:
+          type: string
+          maxLength: 32
+          nullable: true
+          description: Passport number (optional)
+        phone_number:
+          type: string
+          maxLength: 32
+          pattern: "^\\+?[1-9]\\d{1,14}$"
+          nullable: true
+          description: Phone number in international format (optional)
+        user:
+          $ref: '#/components/schemas/UserCreateRequest'
+
+    UserCreateRequest:
+      type: object
+      required: [ email, password, confirm_password ]
+      properties:
+        secret_key:
+          type: string
+          minLength: 1
+          maxLength: 32
+          nullable: true
+          description: Secret key for internal authentication
+        email:
+          type: string
+          format: email
+          minLength: 8
+          maxLength: 1024
+          nullable: false
+          description: Unique email address
+        password:
+          type: string
+          minLength: 8
+          maxLength: 100
+          nullable: false
+        confirm_password:
+          type: string
+          minLength: 8
+          maxLength: 100
+          nullable: false
+        first_name:
+          type: string
+          minLength: 2
+          maxLength: 32
+          nullable: true
+          description: First name of the user
+        last_name:
+          type: string
+          minLength: 2
+          maxLength: 32
+          nullable: true
+          description: Last name of the user
+        address:
+          $ref: '#/components/schemas/AddressCreateRequest'
+
+    AddressCreateRequest:
+      type: object
+      required: [ country_id ]
+      properties:
+        country_id:
+          type: integer
+          format: int64
+          nullable: false
+          description: Country ID from the reference table
+        address:
+          type: string
+          minLength: 10
+          maxLength: 128
+          nullable: true
+          description: Street address (optional)
+        zip_code:
+          type: string
+          minLength: 4
+          maxLength: 32
+          nullable: true
+          description: Postal code (optional)
+        city:
+          type: string
+          minLength: 4
+          maxLength: 32
+          nullable: true
+          description: City name (optional)
+        state:
+          type: string
+          minLength: 4
+          maxLength: 32
+          nullable: true
+          description: State or region (optional)
+
+########################################################################################################################
+###########################              components -> schemas: Update Requests              ###########################
+########################################################################################################################
+
+    IndividualUpdateRequest:
+      type: object
+      required: [ id, user ]
+      properties:
+        id:
+          type: string
+          format: uuid
+          nullable: true
+          description: Unique individual identifier (UUID)
+        passport_number:
+          type: string
+          maxLength: 32
+          nullable: true
+          description: Passport number (optional)
+        phone_number:
+          type: string
+          maxLength: 32
+          pattern: "^\\+?[1-9]\\d{1,14}$"
+          nullable: true
+          description: Phone number in international format (optional)
+        user:
+          $ref: '#/components/schemas/UserUpdateRequest'
+
+    UserUpdateRequest:
+      type: object
+      required: [ id, email ]
+      properties:
+        id:
+          type: string
+          format: uuid
+          nullable: false
+          description: Unique user identifier (UUID)
+        secret_key:
+          type: string
+          minLength: 1
+          maxLength: 32
+          nullable: true
+          description: Secret key for internal authentication
+        email:
+          type: string
+          format: email
+          minLength: 8
+          maxLength: 1024
+          nullable: false
+          description: Unique email address
+        first_name:
+          type: string
+          minLength: 2
+          maxLength: 32
+          nullable: false
+          description: First name of the user
+        last_name:
+          type: string
+          minLength: 2
+          maxLength: 32
+          nullable: false
+          description: Last name of the user
+        address:
+          $ref: '#/components/schemas/AddressUpdateRequest'
+
+    AddressUpdateRequest:
+      type: object
+      required: [ id, country_id ]
+      properties:
+        id:
+          type: string
+          format: uuid
+          nullable: true
+          description: Unique address identifier (UUID). Its optional if new
+        country_id:
+          type: integer
+          format: int64
+          nullable: false
+          description: Country ID from the reference table
+        address:
+          type: string
+          minLength: 10
+          maxLength: 128
+          nullable: true
+          description: Street address (optional)
+        zip_code:
+          type: string
+          minLength: 4
+          maxLength: 32
+          nullable: true
+          description: Postal code (optional)
+        city:
+          type: string
+          minLength: 4
+          maxLength: 32
+          nullable: true
+          description: City name (optional)
+        state:
+          type: string
+          minLength: 4
+          maxLength: 32
+          nullable: true
+          description: State or region (optional)
+
+########################################################################################################################
+##############################              components -> schemas: Responses              ##############################
+########################################################################################################################
+
+    IndividualResponse:
+      type: object
+      required: [ id, user ]
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique individual identifier (UUID)
+        passport_number:
+          type: string
+          description: Passport number
+        phone_number:
+          type: string
+          description: Phone number in international format
+        user:
+          $ref: '#/components/schemas/UserResponse'
+
+    UserResponse:
+      type: object
+      required: [ id, email, filled ]
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique user identifier (UUID)
+        secret_key:
+          type: string
+          description: Secret key for internal authentication
+        email:
+          type: string
+          format: email
+          description: Unique email address
+        first_name:
+          type: string
+          description: First name of the user
+        last_name:
+          type: string
+          description: Last name of the user
+        filled:
+          type: boolean
+          description: Are all user details filled in
+        address:
+          $ref: '#/components/schemas/AddressResponse'
+
+    AddressResponse:
+      type: object
+      required: [ id, country ]
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique address identifier (UUID)
+        address:
+          type: string
+          description: Street address
+        zip_code:
+          type: string
+          description: Postal code
+        city:
+          type: string
+          description: City name
+        state:
+          type: string
+          description: State or region
+        country:
+          $ref: '#/components/schemas/CountryResponse'
+
+    CountryResponse:
+      type: object
+      required: [ id, name, alpha2, alpha3 ]
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: Internal unique country ID
+        name:
+          type: string
+          description: Full country name
+        alpha2:
+          type: string
+          description: ISO 3166-1 alpha-2 code
+        alpha3:
+          type: string
+          description: ISO 3166-1 alpha-3 code
+
+    ErrorResponse:
+      type: object
+      required: [ error, status ]
+      properties:
+        error:
+          type: string
+          description: Human-readable error message
+        status:
+          type: integer
+          description: HTTP status code

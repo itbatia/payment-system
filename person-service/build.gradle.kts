@@ -3,10 +3,11 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 plugins {
-    java
+    java                                    // Компилирует код, создаёт JAR
     id("org.springframework.boot")
-    id("io.spring.dependency-management")
-    id("org.openapi.generator")
+    id("io.spring.dependency-management")   // Управление зависимостями
+    id("org.openapi.generator")             // Генерация DTO из OpenAPI
+    `maven-publish`                         // Публикация в Nexus
 }
 
 java {
@@ -82,8 +83,7 @@ dependencies {
     testAnnotationProcessor("org.projectlombok:lombok:${project.property("lombokVersion")}")
 
     // PSP projects
-    implementation(project(":common")) // from local
-    // implementation("by.itbatia.psp:common:${project.property("commonVersion")}") // from Nexus
+    implementation("by.itbatia.psp:common:${project.property("commonVersion")}") // from Nexus. From local: implementation(project(":common"))
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -102,52 +102,41 @@ tasks.named("processResources") {
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//////                                       Генерация DTO и API из OpenAPI                                       //////
+//////                                          Генерация API из OpenAPI                                          //////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-tasks.register<org.openapitools.generator.gradle.plugin.tasks.GenerateTask>("generateCommonDto") {
+openApiGenerate {
     generatorName.set("spring")
-    inputSpec.set("$rootDir/person-service/openapi/person-service-api.yaml")
-    outputDir.set("$rootDir/common")
-    modelPackage.set("by.itbatia.psp.common.dto")
-
-    globalProperties.set(
-        mapOf(
-            "models" to "",                          // ← включить генерацию DTO (""=all)
-            "apis" to "false",                       // ← НЕ генерировать API-интерфейсы
-            "supportingFiles" to "false"             // ← не включить генерацию Utils (-ApiUtil)
-        )
-    )
-
-    configOptions.set(                               // ← docs - https://openapi-generator.tech/docs/generators/spring/
-        mapOf(
-            "useJakartaEe" to "true",                // ← использует jakarta.* вместо javax.* (требуется для Spring Boot 4)
-            "useSpringBoot4" to "true",              // ← сгенерировать код и предоставить зависимости для использования со Spring Boot 4.x (+ включает Jakarta EE)
-            "openApiNullable" to "false",            // ← не генерировать аннотации @Nullable/@NonNull
-            "modelTests" to "false",                 // ← отключает генерацию тестов для моделей
-
-            "additionalModelTypeAnnotations" to """
-                @lombok.Data
-            """.trimIndent(),
-
-            "useBeanValidation" to "true",            // ← Use BeanValidation API annotations (добавляет @Validated на классе и @Valid на параметрах)
-            "performBeanValidation" to "true"         // ← Добавляет @NotNull, @Size(min = ..., max = ...), @Pattern, @Email, @Min, @Max и т.д.
-        )
-    )
-}
-
-tasks.register<org.openapitools.generator.gradle.plugin.tasks.GenerateTask>("generatePersonServiceApi") {
-    generatorName.set("spring")
-    inputSpec.set("$rootDir/person-service/openapi/person-service-api.yaml")
+    inputSpec.set("$rootDir/person-service/openapi/person-service-openapi.yaml")
     outputDir.set(layout.buildDirectory.dir("generated-sources/openapi").get().asFile.absolutePath)
     apiPackage.set("by.itbatia.psp.personservice.api")
     modelPackage.set("by.itbatia.psp.common.dto")
+
+    importMappings.set(                             // import DTO из common, которые используются в OpenAPI-спецификации
+        mapOf(
+            "IndividualCreateRequest" to "by.itbatia.psp.common.dto.IndividualCreateRequest",
+            "IndividualUpdateRequest" to "by.itbatia.psp.common.dto.IndividualUpdateRequest",
+            "IndividualResponse" to "by.itbatia.psp.common.dto.IndividualResponse",
+
+            "UserCreateRequest" to "by.itbatia.psp.common.dto.UserCreateRequest",
+            "UserUpdateRequest" to "by.itbatia.psp.common.dto.UserUpdateRequest",
+            "UserResponse" to "by.itbatia.psp.common.dto.UserResponse",
+
+            "AddressCreateRequest" to "by.itbatia.psp.common.dto.AddressCreateRequest",
+            "AddressUpdateRequest" to "by.itbatia.psp.common.dto.AddressUpdateRequest",
+            "AddressResponse" to "by.itbatia.psp.common.dto.AddressResponse",
+
+            "CountryResponse" to "by.itbatia.psp.common.dto.CountryResponse",
+            "ErrorResponse" to "by.itbatia.psp.common.dto.ErrorResponse"
+        )
+    )
 
     globalProperties.set(                            // ← docs - https://openapi-generator.tech/docs/generators/spring/
         mapOf(
             "apis" to ""
         )
     )
+
     configOptions.set(
         mapOf(
             "useJakartaEe" to "true",                // ← использует jakarta.* вместо javax.* (требуется для Spring Boot 4)
@@ -169,65 +158,8 @@ sourceSets {
     }
 }
 
-tasks.register("openApiGenerateAll") {
-    dependsOn("generateCommonDto", "generatePersonServiceApi")
-}
-
 tasks.named("compileJava") {
-    dependsOn("openApiGenerateAll")
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//////                              Очистка ненужных или пустых артефактов генерации                              //////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-tasks.register("deleteOpenApiMeta") {
-    doLast {
-        val metaDir = file("$rootDir/common/.openapi-generator")
-        if (metaDir.exists()) {
-            metaDir.deleteRecursively()
-            println("Deleted .openapi-generator metadata folder")
-        }
-    }
-}
-
-tasks.register("deleteGeneratedEmptyDirs") {
-    doLast {
-        val srcMainJava = file("$rootDir/common/src/main/java")
-        val srcMainResources = file("$rootDir/common/src/main/resources")
-        val testDir = file("$rootDir/common/src/test")
-
-        // Delete src/main/java/org/:
-        listOf(
-            "org/openapitools/api",
-            "org/openapitools/configuration",
-            "org/openapitools",
-            "org"
-        ).forEach { pkg ->
-            val dir = File(srcMainJava, pkg)
-            if (dir.exists()) {
-                dir.deleteRecursively()
-                println("Deleted junk package: $pkg")
-            }
-        }
-
-        // Delete src/test/:
-        if (testDir.exists()) {
-            testDir.deleteRecursively()
-            println("Deleted empty test/java directory")
-        }
-
-        // Delete resources:
-        if (srcMainResources.exists() && srcMainResources.list()?.isEmpty() == true) {
-            srcMainResources.deleteRecursively()
-            println("Deleted empty resources folder")
-        }
-    }
-}
-
-tasks.named("generateCommonDto") {
-    finalizedBy("deleteOpenApiMeta")
-    finalizedBy("deleteGeneratedEmptyDirs")
+    dependsOn("openApiGenerate")
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -11,6 +11,8 @@ servers:
 tags:
   - name: Authentication
     description: REST API for user registration and authentication
+  - name: Individuals
+    description: REST API to interact with Individual objects
 
 ########################################################################################################################
 ###########################                             Auth Api                             ###########################
@@ -31,7 +33,7 @@ paths:
       tags:
         - Authentication
       requestBody:
-        $ref: '../../person-service/openapi/person-service-api.yaml#/components/requestBodies/IndividualCreateRequestBody'
+        $ref: '../../person-service/openapi/person-service-openapi.yaml#/components/requestBodies/IndividualCreateRequestBody'
       responses:
         '201':
           $ref: '#/components/responses/RegistrationResponse201'
@@ -141,18 +143,12 @@ paths:
       tags:
         - Individuals
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-          example: "a1b2c3d4-e5f6-7890-g1h2-i3j4k5l6m7n8"
+        - $ref: '../../person-service/openapi/person-service-openapi.yaml#/components/parameters/IndividualIdParam'
       responses:
         '200':
-          $ref: '../../person-service/openapi/person-service-api.yaml#/components/responses/SuccessfulIndividualResponse'
+          $ref: '../../person-service/openapi/person-service-openapi.yaml#/components/responses/SuccessfulIndividualResponse'
         '404':
-          $ref: '../../person-service/openapi/person-service-api.yaml#/components/responses/NotFound'
+          $ref: '../../person-service/openapi/person-service-openapi.yaml#/components/responses/NotFound'
 
     delete:
       operationId: delete
@@ -168,18 +164,12 @@ paths:
       tags:
         - Individuals
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-          example: "a1b2c3d4-e5f6-7890-g1h2-i3j4k5l6m7n8"
+        - $ref: '../../person-service/openapi/person-service-openapi.yaml#/components/parameters/IndividualIdParam'
       responses:
         '204':
           description: Individual deleted (archived)
         '404':
-          $ref: '../../person-service/openapi/person-service-api.yaml#/components/responses/NotFound'
+          $ref: '../../person-service/openapi/person-service-openapi.yaml#/components/responses/NotFound'
 
   /individuals/me:
 
@@ -197,9 +187,9 @@ paths:
         - Individuals
       responses:
         '200':
-          $ref: '../../person-service/openapi/person-service-api.yaml#/components/responses/SuccessfulIndividualResponse'
+          $ref: '../../person-service/openapi/person-service-openapi.yaml#/components/responses/SuccessfulIndividualResponse'
         '404':
-          $ref: '../../person-service/openapi/person-service-api.yaml#/components/responses/NotFound'
+          $ref: '../../person-service/openapi/person-service-openapi.yaml#/components/responses/NotFound'
 
     put:
       operationId: update
@@ -221,14 +211,14 @@ paths:
       tags:
         - Individuals
       requestBody:
-        $ref: '../../person-service/openapi/person-service-api.yaml#/components/requestBodies/IndividualUpdateRequestBody'
+        $ref: '../../person-service/openapi/person-service-openapi.yaml#/components/requestBodies/IndividualUpdateRequestBody'
       responses:
         '200':
-          $ref: '../../person-service/openapi/person-service-api.yaml#/components/responses/SuccessfulIndividualResponse'
+          $ref: '../../person-service/openapi/person-service-openapi.yaml#/components/responses/SuccessfulIndividualResponse'
         '400':
-          $ref: '../../person-service/openapi/person-service-api.yaml#/components/responses/BadRequest'
+          $ref: '../../person-service/openapi/person-service-openapi.yaml#/components/responses/BadRequest'
         '404':
-          $ref: '../../person-service/openapi/person-service-api.yaml#/components/responses/NotFound'
+          $ref: '../../person-service/openapi/person-service-openapi.yaml#/components/responses/NotFound'
 
 ########################################################################################################################
 ##########################               components: schemas: Create Requests                ###########################
@@ -289,7 +279,40 @@ components:
           format: date-time
 
 ########################################################################################################################
-############################                components: responses: Examples                 ############################
+###############################          components -> requestBodies: Examples           ###############################
+########################################################################################################################
+
+  requestBodies:
+
+    UserLoginRequestBody:
+      description: User login credentials
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/UserLoginRequest'
+          examples:
+            LoginRequestExample:
+              summary: Valid login credentials
+              value:
+                email: "user@example.com"
+                password: "SecurePass123!"
+
+    RefreshTokenRequestBody:
+      description: Refresh token request
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/TokenRefreshRequest'
+          examples:
+            RefreshTokenExample:
+              summary: Valid refresh token request
+              value:
+                refresh_token: "eyJhbGciOiJIUzUxMiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICI...<truncated>"
+
+########################################################################################################################
+############################               components -> responses: Examples                ############################
 ########################################################################################################################
 
   responses:
@@ -329,7 +352,7 @@ components:
       content:
         application/json:
           schema:
-            $ref: '../../person-service/openapi/person-service-api.yaml#/components/schemas/ErrorResponse'
+            $ref: '../../common/openapi/common-openapi.yaml#/components/schemas/ErrorResponse'
           examples:
             ErrorResponse:
               summary: Input validation failed
@@ -342,7 +365,7 @@ components:
       content:
         application/json:
           schema:
-            $ref: '../../person-service/openapi/person-service-api.yaml#/components/schemas/ErrorResponse'
+            $ref: '../../common/openapi/common-openapi.yaml#/components/schemas/ErrorResponse'
           examples:
             InvalidCredentials:
               summary: Authentication failed
@@ -355,7 +378,7 @@ components:
       content:
         application/json:
           schema:
-            $ref: '../../person-service/openapi/person-service-api.yaml#/components/schemas/ErrorResponse'
+            $ref: '../../common/openapi/common-openapi.yaml#/components/schemas/ErrorResponse'
           examples:
             ErrorResponse:
               summary: Example of a response
@@ -368,7 +391,7 @@ components:
       content:
         application/json:
           schema:
-            $ref: '../../person-service/openapi/person-service-api.yaml#/components/schemas/ErrorResponse'
+            $ref: '../../common/openapi/common-openapi.yaml#/components/schemas/ErrorResponse'
           examples:
             UserNotFound:
               summary: User was deleted after token issuance
@@ -381,7 +404,7 @@ components:
       content:
         application/json:
           schema:
-            $ref: '../../person-service/openapi/person-service-api.yaml#/components/schemas/ErrorResponse'
+            $ref: '../../common/openapi/common-openapi.yaml#/components/schemas/ErrorResponse'
           examples:
             ErrorResponse:
               summary: Example of a response
@@ -409,7 +432,7 @@ components:
       content:
         application/json:
           schema:
-            $ref: '../../person-service/openapi/person-service-api.yaml#/components/schemas/ErrorResponse'
+            $ref: '../../common/openapi/common-openapi.yaml#/components/schemas/ErrorResponse'
           examples:
             MissingRefreshToken:
               summary: Validation error
@@ -422,7 +445,7 @@ components:
       content:
         application/json:
           schema:
-            $ref: '../../person-service/openapi/person-service-api.yaml#/components/schemas/ErrorResponse'
+            $ref: '../../common/openapi/common-openapi.yaml#/components/schemas/ErrorResponse'
           examples:
             InvalidRefreshToken:
               summary: Token validation failed
@@ -444,36 +467,3 @@ components:
                 email: "user@example.com"
                 created_at: "2026-02-25T17:01:53.471Z"
                 roles: [ ]
-
-########################################################################################################################
-###############################                components: requestBodies                 ###############################
-########################################################################################################################
-
-  requestBodies:
-
-    UserLoginRequestBody:
-      description: User login credentials
-      required: true
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/UserLoginRequest'
-          examples:
-            LoginRequestExample:
-              summary: Valid login credentials
-              value:
-                email: "user@example.com"
-                password: "SecurePass123!"
-
-    RefreshTokenRequestBody:
-      description: Refresh token request
-      required: true
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/TokenRefreshRequest'
-          examples:
-            RefreshTokenExample:
-              summary: Valid refresh token request
-              value:
-                refresh_token: "eyJhbGciOiJIUzUxMiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICI...<truncated>"

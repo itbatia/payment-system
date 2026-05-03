@@ -19,8 +19,8 @@ dependencyResolutionManagement {
         maven("http://localhost:8081/repository/maven-public/") {
             name = "Nexus"
             credentials {
-                username = providers.gradleProperty("nexusUsername").toString()
-                password = providers.gradleProperty("nexusPassword").toString()
+                username = providers.gradleProperty("nexusUsername").get()
+                password = providers.gradleProperty("nexusPassword").get()
             }
             withGroovyBuilder {
                 setProperty("allowInsecureProtocol", true)
