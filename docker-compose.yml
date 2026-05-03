@@ -360,6 +360,56 @@ services:
         max-file: "3"                                                         # Хранить максимум 3 файла
 
 
+  nexus:
+    image: sonatype/nexus3:3.89.1
+    container_name: nexus-psp
+    environment:
+      NEXUS_SECURITY_RANDOMPASSWORD: false
+      INSTALL4J_ADD_VM_PARAMS: "-Dnexus.onboarding.enabled=false -Djava.util.prefs.userRoot=/nexus-data/javaprefs"
+    volumes:
+      - nexus-data:/nexus-data
+    ports:
+      - "8081:8081"
+    networks:
+      - nexus-init-net
+      - app-network
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8081/service/rest/v1/status/writable" ]
+      interval: 5s
+      timeout: 10s
+      retries: 40
+    restart: unless-stopped
+    logging:
+      driver: "local"                                                         # driver: local или json-file полностью совместим с Alloy
+      options:
+        max-size: "10m"                                                       # Один файл логов максимум 10 MB
+        max-file: "3"                                                         # Хранить максимум 3 файла
+
+    # -Dnexus.onboarding.enabled=false - отключить wizard окошко
+    # -Djava.util.prefs.userRoot=... — это способ обойти ошибки с правами на запись в /root/.java, которые возникают из-за того, что Nexus пытается сохранить флаг принятия EULA в системные prefs.
+    # Т.к. EULA гарантированно принимаются через REST API в nexus_init.sh, то можно перенаправить prefs в доступную директорию (javaprefs), чтобы избежать предупреждений.
+
+
+  nexus-init:
+    image: alpine:3.23.3
+    container_name: nexus-init-psp
+    command: ["sh", "/scripts/nexus_init.sh"]
+    environment:
+      NEXUS_URL: http://nexus:8081
+      NEW_NEXUS_PASSWORD: admin123
+      NEW_NEXUS_USERNAME: admin123
+    volumes:
+      - ./infrastructure/nexus/scripts/nexus_init.sh:/scripts/nexus_init.sh:ro
+      - ./infrastructure/nexus/schemas:/schemas:ro
+      - nexus-data:/nexus-data
+    networks:
+      - nexus-init-net
+    depends_on:
+      nexus:
+        condition: service_healthy
+    init: true
+
+
 volumes:
   keycloak_postgres_data:
   person_postgres_data:
@@ -368,6 +418,8 @@ volumes:
   grafana_data:
   alloy-data:
   alertmanager_data:
+  nexus-data:
+
 
 networks:
   app-network:
@@ -375,4 +427,6 @@ networks:
   keycloak-db-net:
     driver: bridge
   person-db-net:
+    driver: bridge
+  nexus-init-net:
     driver: bridge

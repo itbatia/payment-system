@@ -33,9 +33,9 @@ configurations {
     }
 }
 
-repositories {
-    mavenCentral()
-}
+//repositories {
+//    mavenCentral()
+//}
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //////                                                Зависимости                                                 //////
@@ -79,7 +79,7 @@ dependencies {
 
     // PSP projects
     implementation(project(":common")) // from local
-//    implementation("by.itbatia.psp:common:${project.property("commonVersion")}") // from Nexus
+    // implementation("by.itbatia.psp:common:${project.property("commonVersion")}") // from Nexus
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -33,20 +33,6 @@ configurations {
     }
 }
 
-repositories {
-    mavenCentral()
-    maven {
-        url = uri("http://localhost:8081/repository/maven-public/")
-        credentials {
-            username = "admin"
-            password = "admin-password"
-        }
-        withGroovyBuilder {
-            setProperty("allowInsecureProtocol", true)
-        }
-    }
-}
-
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //////                                                Зависимости                                                 //////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -97,7 +83,7 @@ dependencies {
 
     // PSP projects
     implementation(project(":common")) // from local
-//    implementation("by.itbatia.psp:common:${project.property("commonVersion")}") // from Nexus
+    // implementation("by.itbatia.psp:common:${project.property("commonVersion")}") // from Nexus
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

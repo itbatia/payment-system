@@ -1,0 +1,18 @@
+{
+  "name": "maven-releases",
+  "online": true,
+  "storage": {
+    "blobStoreName": "default",
+    "strictContentTypeValidation": true,
+    "writePolicy": "ALLOW"
+  },
+  "cleanup": null,
+  "component": {
+    "proprietaryComponents": true
+  },
+  "maven": {
+    "versionPolicy": "RELEASE",
+    "layoutPolicy": "STRICT"
+  }
+}
+

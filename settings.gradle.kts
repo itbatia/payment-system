@@ -14,6 +14,24 @@ pluginManagement {
     }
 }
 
+dependencyResolutionManagement {
+    repositories {
+        maven("http://localhost:8081/repository/maven-public/") {
+            name = "Nexus"
+            credentials {
+                username = providers.gradleProperty("nexusUsername").toString()
+                password = providers.gradleProperty("nexusPassword").toString()
+            }
+            withGroovyBuilder {
+                setProperty("allowInsecureProtocol", true)
+            }
+            mavenContent {
+                releasesOnly()
+            }
+        }
+    }
+}
+
 rootProject.name = "payment-system"
 include(":individuals-api")
 include(":person-service")
