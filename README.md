@@ -135,43 +135,67 @@ _Все сервисы должны быть в состоянии Up.
 
 ```
 /payment-system  
-├── infrastructure/                       # Инфраструктурные конфигурации для observability, CI/CD и артефактов
-│   ├── alertmanager/                     # Правила оповещений и шаблоны уведомлений для Alertmanager
-│   ├── alloy/                            # Конфигурация Alloy — unified collector для метрик, логов и трассировок
-│   ├── grafana/                          # Provisioning: дашборды, источники данных (Prometheus, Tempo, Loki), настройки пользователей
-│   ├── loki/                             # Конфигурация Loki — система агрегации и хранения логов
-│   ├── nexus/                            # Настройка и автоматизация Nexus Repository Manager
+├── infrastructure/                            # Инфраструктурные конфигурации для observability, CI/CD и артефактов
+│   ├── alertmanager/                          # Правила оповещений и шаблоны уведомлений для Alertmanager
+│   │   └──  alertmanager.yml                  # Основной конфиг: receivers, routes и др.
+│   │
+│   ├── alloy/                                 # Конфигурация Alloy — unified collector для метрик, логов и трассировок
+│   │   └── config.alloy                       # Конфигурация receivers, processors, exporters и pipelines для Loki/Tempo/Prometheus
+│   │
+│   ├── grafana/                               # Provisioning: дашборды, источники данных (Prometheus, Tempo, Loki), настройки пользователей
+│   │   ├── dashboards/                        # JSON-файлы дашбордов (из Grafana UI → Export)
+│   │   │   └── individuals-api-dashboard.json # Дашборд для мониторинга individuals-api
+│   │   └── provisioning/                      # Конфигурация автоматического provisioning при старте Grafana
+│   │       ├── dashboards/                    # Настройка загрузки дашбордов из файлов
+│   │       │   └── all.yml                    # Правило: загружать все .json из ./dashboards/
+│   │       └── datasources/                   # Определение внешних источников данных
+│   │           ├── loki.yaml                  # Подключение Loki (logs)
+│   │           ├── prometheus.yaml            # Подключение Prometheus (metrics)
+│   │           └── tempo.yaml                 # Подключение Tempo (traces)
+│   │
+│   ├── loki/                                  # Конфигурация Loki — система агрегации и хранения логов
+│   │   └── loki-config.yaml                   # Pipeline stages, retention policies, storage backend (filesystem/boltdb)
+│   │
+│   ├── nexus/                                 # Настройка и автоматизация Nexus Repository Manager
 │   │   ├── scripts/
-│   │   │   └── nexus_init.sh             # Инициализационный скрипт: настройка пользователя, EULA, репозиториев
+│   │   │   └── nexus_init.sh                  # Инициализационный скрипт: настройка пользователя, EULA, репозиториев
 │   │   └── schemas/
-│   │       ├── confluent_proxy.json      # Конфигурация proxy-репозитория к packages.confluent.io
-│   │       ├── maven_public_group.json   # Групповой репозиторий, объединяющий maven-central, confluent-proxy и внутренние релизы
-│   │       └── maven_releases.json       # Hosted-репозиторий для публикации собственных артефактов (с ALLOW_ONCE)
-│   ├── postman/                          # Postman-коллекции и окружения для демонстрации API и интеграционного тестирования
-│   ├── prometheus/                       # Конфигурация scrape targets, recording/alerting rules для Prometheus
-│   ├── readme-sources/                   # Исходники для README.md: диаграммы C4, sequence-диаграммы, скриншоты Grafana
-│   ├── tempo/                            # Конфигурация Tempo — backend для хранения и поиска распределённых трассировок (traces)
-│   └── developer/                        # Технические заметки разработчика: решения проблем, ссылки, чек-листы развёртывания
+│   │       ├── confluent_proxy.json           # Конфигурация proxy-репозитория к packages.confluent.io
+│   │       ├── maven_public_group.json        # Групповой репозиторий, объединяющий maven-central, confluent-proxy и внутренние релизы
+│   │       └── maven_releases.json            # Hosted-репозиторий для публикации собственных артефактов (с ALLOW_ONCE)
+│   │
+│   ├── postman/                               # Postman-коллекции и окружения для демонстрации API и интеграционного тестирования
+│   │
+│   ├── prometheus/                            # Конфигурация для Prometheus
+│   │   ├── alerts.yml                         # Алерты: high error rate, latency spikes
+│   │   └── prometheus.yml                     # Конфигурация alerting, storage, scrape intervals, remote_write и др. 
+│   │
+│   ├── readme-sources/                        # Исходники для README.md: диаграммы C4, sequence-диаграммы, скриншоты Grafana
+│   │
+│   ├── tempo/                                 # Конфигурация Tempo 
+│   │   └── tempo-config.yaml                  # Storage backend для хранения и поиска распределённых трассировок (traces)
+│   │
+│   └── developer/                             # Технические заметки разработчика: решения проблем, ссылки, чек-листы развёртывания
 │
-├── individuals-api/                      # Микросервис-оркестратор: внешний API, взаимодействие с Keycloak и person-service
-│   ├── openapi/                          # OpenAPI-спецификация внешнего REST API (YAML)
-│   ├── resources/                        # Статические ресурсы: realm-config.json для импорта в Keycloak при старте
-│   ├── src/main/java/                    # Код: контроллеры, сервисы, Feign-клиенты, мапперы, конфигурация WebClient
-│   ├── build.gradle.kts                  # Зависимости, настройка OpenAPI Generator, публикация образа
-│   └── Dockerfile                        # Multi-stage сборка Docker-образа на основе Eclipse Temurin
+├── individuals-api/                           # Микросервис-оркестратор: внешний API, взаимодействие с Keycloak и person-service
+│   ├── openapi/                               # OpenAPI-спецификация внешнего REST API (YAML)
+│   ├── resources/                             # Статические ресурсы: realm-config.json для импорта в Keycloak при старте
+│   ├── src/main/java/                         # Код: контроллеры, сервисы, Feign-клиенты, мапперы, конфигурация WebClient
+│   ├── build.gradle.kts                       # Зависимости, настройка OpenAPI Generator, публикация образа
+│   └── Dockerfile                             # Multi-stage сборка Docker-образа на основе Eclipse Temurin
 │
-├── person-service/                       # Внутренний микросервис: управление пользователями, адресами, индивидуальными данными
-│   ├── openapi/                          # OpenAPI-спецификация внутреннего REST API (YAML) — используется для генерации клиента
-│   ├── src/main/java/                    # Код: JPA-сущности, репозитории, сервисы с транзакциями, Envers-аудит, контроллеры
-│   ├── build.gradle.kts                  # Зависимости, настройка OpenAPI Generator, задача публикации клиента в Nexus
-│   └── Dockerfile                        # Multi-stage сборка Docker-образа на основе Eclipse Temurin
+├── person-service/                            # Внутренний микросервис: управление пользователями, адресами, индивидуальными данными
+│   ├── openapi/                               # OpenAPI-спецификация внутреннего REST API (YAML) — используется для генерации клиента
+│   ├── src/main/java/                         # Код: JPA-сущности, репозитории, сервисы с транзакциями, Envers-аудит, контроллеры
+│   ├── build.gradle.kts                       # Зависимости, настройка OpenAPI Generator, задача публикации клиента в Nexus
+│   └── Dockerfile                             # Multi-stage сборка Docker-образа на основе Eclipse Temurin
 │
-├── common/                               # Общий модуль: содержит только DTO, сгенерированные из OpenAPI-схем (без бизнес-логики)
+├── common/                                    # Общий модуль: содержит только DTO, сгенерированные из OpenAPI-схем (без бизнес-логики)
 │
-├── docker-compose.yml                    # Основной файл оркестрации: поднимает все сервисы (individuals-api, person-service, PostgreSQL, observability stack, Nexus и др.)
-├── gradle.properties                     # Централизованное управление версиями зависимостей и плагинов (springBootVersion, openapiGeneratorVersion и др.)
-├── settings.gradle.kts                   # Объявление модулей, pluginManagement, dependencyResolutionManagement (включая Nexus как репозиторий)
-└── README.md                             # Документация: архитектура, схемы, инструкции по запуску, тестированию и развёртыванию
+├── docker-compose.yml                         # Основной файл оркестрации: поднимает все сервисы (individuals-api, person-service, PostgreSQL, observability stack, Nexus и др.)
+├── gradle.properties                          # Централизованное управление версиями зависимостей и плагинов (springBootVersion, openapiGeneratorVersion и др.)
+├── settings.gradle.kts                        # Объявление модулей, pluginManagement, dependencyResolutionManagement (включая Nexus как репозиторий)
+└── README.md                                  # Документация: архитектура, схемы, инструкции по запуску, тестированию и развёртыванию
 ```
 
 ## Observability-стек
